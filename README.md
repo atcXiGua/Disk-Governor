@@ -82,13 +82,13 @@ Disk Governor 换了个判断入口，只问三个问题：
 
 ### 方式一：便携版（推荐，无需安装 Node）
 
-解压 `DiskGovernor-2.0.0-win-x64.zip`，双击：
+解压 `DiskGovernor-2.0.0-portable-win-x64.zip`，双击：
 
 ```
 启动.cmd
 ```
 
-Node 运行时已打包在内（`node.exe`，约 83 MB），复制到任意 Windows 10/11 机器即可运行，不需要安装任何依赖。
+Node 运行时已打包在内（`node.exe`，约 83 MB），复制到任意 Windows 10/11 机器即可运行，不需要安装任何依赖。解压后请保持目录结构不变（`node.exe` 与 `src/` 必须同级）。
 
 ### 方式二：源码双击
 

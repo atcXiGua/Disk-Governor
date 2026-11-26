@@ -171,6 +171,9 @@ node src/server.js
 │   ├── strategy.zh-CN.md     # 规则背后的判断依据（人类可读）
 │   └── usage.zh-CN.md        # 使用说明
 │
+├── scripts/
+│   └── pack.js               # 零依赖 zip 打包器（UTF-8 文件名）
+│
 ├── legacy/
 │   └── c-drive-helper/       # v1 早期版本，保留备查
 │
@@ -293,11 +296,16 @@ pkg . --targets node22-win-x64 --output dist/DiskGovernor.exe
 
 ```bash
 mkdir -p dist/portable
-cp -r src rules web test docs config.json package.json dist/portable/
+cp -r src rules web test docs config.json package.json 启动.cmd 使用说明.txt dist/portable/
 cp "$(which node)" dist/portable/node.exe
+
+# 打包（必须用这个脚本，不要用 Compress-Archive / tar）
+node scripts/pack.js dist/portable dist/DiskGovernor-2.0.0-portable-win-x64.zip
 ```
 
-约 84 MB，压缩后约 32 MB。**不要**把 `dist/` 提交进仓库，发布时作为 Release 附件上传。
+约 87 MB，压缩后约 33 MB。**不要**把 `dist/` 提交进仓库，发布时作为 Release 附件上传。
+
+打包为什么不用 `Compress-Archive` 或 `tar`：两者在 Windows 上按系统 ANSI（简体中文为 GBK）写入 zip 内的文件名，且不置 UTF-8 标志位。结果是在非中文 Windows 上解压，`启动.cmd` 会变成乱码。`scripts/pack.js` 始终以 UTF-8 编码文件名并置通用标志位 bit 11，跨系统解压一致；零依赖，纯 `zlib`。
 
 ---
 

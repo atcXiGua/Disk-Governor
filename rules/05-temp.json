@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "group": "temp",
+  "description": "临时文件按时间窗切分：超龄的可清，未超龄的仅展示。顺序不可颠倒——超龄规则必须先命中，否则热文件会被当成可清对象。",
+  "rules": [
+    {
+      "id": "temp",
+      "name": "临时文件（超过 72 小时）",
+      "tier": "L1",
+      "kind": "clean",
+      "regenerable": true,
+      "match": {
+        "any": [
+          { "pathAny": ["/appdata/local/temp/", "/windows/temp/", "/appdata/roaming/temp/"] },
+          { "ext": [".tmp", ".temp", ".part", ".crdownload", ".download", "._mp"] }
+        ]
+      },
+      "requires": { "minAgeHours": "@tempAgeHours" },
+      "basis": "位于系统或用户的 Temp 目录，或使用临时扩展名，且最后活动已超过 72 小时",
+      "advice": "可清理。时间窗设为 72 小时而不是「今天之前」，避免动到当天仍在被引用的文件；被进程占用的会自动跳过"
+    },
+    {
+      "id": "temp_recent",
+      "name": "临时文件（72 小时内，本轮不清）",
+      "tier": "L2",
+      "kind": "hold",
+      "selectable": false,
+      "regenerable": true,
+      "match": {
+        "any": [
+          { "pathAny": ["/appdata/local/temp/", "/windows/temp/", "/appdata/roaming/temp/"] },
+          { "ext": [".tmp", ".temp", ".part", ".crdownload", ".download", "._mp"] }
+        ]
+      },
+      "basis": "同样在临时位置，但最后活动在 72 小时内，可能仍被运行中的程序引用",
+      "advice": "本轮不清理。仅用于让你看到「还有多少是热的」，隔一天再扫就会转入可清项"
+    }
+  ]
+}

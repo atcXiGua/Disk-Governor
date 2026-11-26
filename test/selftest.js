@@ -3,10 +3,16 @@ process.env.DISKGOV_NO_PROC = '1';
 
 const fs = require('fs');
 const path = require('path');
-const { classify, prepare } = require('./lib/classify');
-const { Planner } = require('./lib/plan');
+const { classify, prepare } = require('../src/core/classify');
+const { Planner } = require('../src/core/plan');
+const { loadRules } = require('../src/core/rules');
 
-const cfg = JSON.parse(fs.readFileSync(path.join(__dirname, 'config.json'), 'utf8'));
+const ROOT = path.join(__dirname, '..');
+const cfg = JSON.parse(fs.readFileSync(path.join(ROOT, 'config.json'), 'utf8'));
+const loaded = loadRules(path.join(ROOT, cfg.rulesDir || 'rules'), {
+  disabled: cfg.disabledRules || []
+});
+cfg.rules = loaded.rules;
 const now = Date.now();
 const H = 3600000;
 const D = 86400000;

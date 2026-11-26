@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "group": "content",
+  "description": "用户内容：不可再生或不宜删除。L2 的旧安装包排在 L3 之前，因为下载目录同时命中两条规则，必须先判定「是不是安装包」。",
+  "rules": [
+    {
+      "id": "old_installers",
+      "name": "下载目录里的旧安装包",
+      "tier": "L2",
+      "kind": "clean",
+      "regenerable": false,
+      "match": {
+        "pathAny": ["/downloads/"],
+        "ext": [".exe", ".msi", ".msix", ".iso", ".img", ".dmg"]
+      },
+      "requires": { "minAgeDays": "@installerAgeDays" },
+      "basis": "位于下载目录、超过 90 天未改动的安装包与镜像",
+      "advice": "建议移到 D:\\归档\\安装包 而不是删除。有些是离线安装备份，删了要重新下载；压缩包与文档不在此规则内"
+    },
+    {
+      "id": "user_docs",
+      "name": "个人文档与桌面",
+      "tier": "L3",
+      "kind": "migrate",
+      "match": {
+        "pathAny": ["/documents/", "/desktop/", "/pictures/", "/videos/", "/music/", "/downloads/"]
+      },
+      "basis": "用户自己产生的内容，是可再生的反面：删了就没有第二份",
+      "advice": "只迁移不删除。右键文件夹 → 属性 → 位置 → 移动到 D 盘，不要用剪切"
+    },
+    {
+      "id": "wechat_files",
+      "name": "微信聊天文件",
+      "tier": "L3",
+      "kind": "migrate",
+      "match": { "pathAny": ["/xwechat/files/", "/xwechat/msg/", "/wechat files/"] },
+      "basis": "聊天里收到的文件、图片、语音，属于唯一副本",
+      "advice": "只迁移。用微信「设置 → 文件管理 → 更改存储位置」整体搬到 D 盘，不要在资源管理器里手搬"
+    }
+  ]
+}

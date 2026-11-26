@@ -5,15 +5,17 @@ const fsp = fs.promises;
 const path = require('path');
 const { spawn } = require('child_process');
 
-const { scanDrive, driveInfo } = require('./lib/scan');
-const { classify, prepare, TIER_META, TIER_ORDER } = require('./lib/classify');
-const { findDuplicates, findSimilar } = require('./lib/dedupe');
-const { buildReport, fmtBytes } = require('./lib/report');
-const { Planner } = require('./lib/plan');
-const { atimeState, anyRunning } = require('./lib/procs');
+const { scanDrive, driveInfo } = require('./core/scan');
+const { classify, prepare, TIER_META, TIER_ORDER } = require('./core/classify');
+const { findDuplicates, findSimilar } = require('./core/dedupe');
+const { buildReport, fmtBytes } = require('./core/report');
+const { Planner } = require('./core/plan');
+const { atimeState, anyRunning } = require('./core/procs');
+const { loadRules } = require('./core/rules');
 
-const ROOT = __dirname;
-const UI = path.join(ROOT, 'ui.html');
+// 源码布局：<root>/src/server.js；打包后保持同样的相对结构
+const ROOT = path.join(__dirname, '..');
+const UI = path.join(ROOT, 'web', 'index.html');
 const CFG_PATH = path.join(ROOT, 'config.json');
 const HIST_PATH = path.join(ROOT, 'history.json');
 const PORT_BASE = 7790;
@@ -21,6 +23,30 @@ const PORT_BASE = 7790;
 let config = JSON.parse(fs.readFileSync(CFG_PATH, 'utf8'));
 if (!config.backupRoot) config.backupRoot = 'D:\\磁盘治理备份';
 if (!Array.isArray(config.disabledRules)) config.disabledRules = [];
+
+const RULES_DIR = path.join(ROOT, config.rulesDir || 'rules');
+let ruleGroups = [];
+
+function reloadRules() {
+  const res = loadRules(RULES_DIR, { disabled: config.disabledRules });
+  config.rules = res.rules;
+  ruleGroups = res.groups;
+  return res;
+}
+
+// 规则是唯一能导致误删的部件，加载失败就拒绝启动（fail closed）
+try {
+  reloadRules();
+} catch (e) {
+  console.error('');
+  console.error('  规则加载失败，工具拒绝启动。');
+  console.error('  ' + (e && e.message || e));
+  console.error('');
+  console.error('  请修复 rules/ 目录下的文件后重试。');
+  console.error('  排查：node test/selftest.js');
+  console.error('');
+  process.exit(1);
+}
 
 const planner = new Planner(config);
 const jobs = new Map();
@@ -172,7 +198,10 @@ const server = http.createServer(async (req, res) => {
     }
 
     if (p === '/api/health') {
-      return json(res, 200, { ok: true, scope: config.scope, version: 2 });
+      return json(res, 200, {
+        ok: true, scope: config.scope, version: 2,
+        rules: (config.rules || []).length, ruleGroups: ruleGroups.length
+      });
     }
 
     if (p === '/api/config' && req.method === 'GET') {
@@ -195,8 +224,13 @@ const server = http.createServer(async (req, res) => {
         }
       }
       const persisted = saveConfig();
+      try {
+        reloadRules();
+      } catch (e) {
+        return json(res, 400, { ok: false, error: '规则重载失败：' + (e && e.message || e) });
+      }
       planner.reload(config);
-      return json(res, 200, { ok: true, config, persisted });
+      return json(res, 200, { ok: true, config, persisted, rules: config.rules.length });
     }
 
     if (p === '/api/strategy') {
@@ -204,7 +238,10 @@ const server = http.createServer(async (req, res) => {
         ok: true,
         tiers: TIER_META,
         tierOrder: TIER_ORDER,
+        groups: ruleGroups,
+        rulesDir: path.relative(ROOT, RULES_DIR),
         rules: (config.rules || []).map(r => ({
+          file: r._file,
           id: r.id, name: r.name, tier: r.tier, kind: r.kind,
           regenerable: r.regenerable === true,
           selectable: r.selectable !== false && r.kind === 'clean' && r.tier !== 'L0' && r.tier !== 'L3',
@@ -385,6 +422,9 @@ function listen(port, attempt = 0) {
     console.log('');
     console.log('  Disk Governor v2 started');
     console.log('  ' + u);
+    console.log('');
+    console.log('  rules  : ' + config.rules.length + ' loaded from ' + ruleGroups.length + ' files');
+    console.log('  config : ' + CFG_PATH);
     console.log('');
     console.log('  Close this window to stop.');
     console.log('');

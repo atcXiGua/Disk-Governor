@@ -1,0 +1,28 @@
+{
+  "name": "disk-governor",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Rule-based, rollback-safe disk space governance for Windows",
+  "main": "src/server.js",
+  "bin": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node test/selftest.js",
+    "build": "pkg . --targets node22-win-x64 --output dist/DiskGovernor.exe"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "pkg": {
+    "assets": [
+      "web/**/*",
+      "rules/**/*",
+      "config.json"
+    ],
+    "targets": [
+      "node22-win-x64"
+    ],
+    "outputPath": "dist"
+  },
+  "license": "MIT"
+}

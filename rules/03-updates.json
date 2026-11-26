@@ -1,0 +1,65 @@
+{
+  "schemaVersion": 1,
+  "group": "updates",
+  "description": "系统与应用的更新残留：安装完成后即废弃，可再生且重建无感，属于收益/风险比最高的部分。",
+  "rules": [
+    {
+      "id": "win_update",
+      "name": "Windows 更新下载缓存",
+      "tier": "L1",
+      "kind": "clean",
+      "regenerable": true,
+      "match": {
+        "pathAny": [
+          "/softwaredistribution/download/",
+          "/softwaredistribution/deliveryoptimization/"
+        ]
+      },
+      "requires": { "minAgeHours": 24 },
+      "basis": "已下载并安装完成的更新包，系统不再引用",
+      "advice": "可清理。若正在装更新，服务会重新下载；未完成的更新不会受影响"
+    },
+    {
+      "id": "app_crash_dumps",
+      "name": "应用崩溃转储",
+      "tier": "L1",
+      "kind": "clean",
+      "regenerable": true,
+      "match": { "pathAny": ["/crashdumps/"] },
+      "requires": { "minAgeHours": "@dumpAgeHours" },
+      "basis": "单个应用崩溃时生成的进程内存转储",
+      "advice": "可清理。崩溃已过去一周以上就没有排查价值"
+    },
+    {
+      "id": "kernel_dump",
+      "name": "内核与蓝屏转储",
+      "tier": "L1",
+      "kind": "clean",
+      "regenerable": true,
+      "match": {
+        "any": [
+          { "pathAny": ["/livekernelreports/", "/minidump/", "/memory.dmp"] },
+          { "ext": [".dmp", ".mdmp", ".hdmp"] }
+        ],
+        "notPathAny": ["/crashdumps/"]
+      },
+      "requires": { "minAgeHours": 24 },
+      "basis": "崩溃时的内存快照，含完整物理内存，单文件常达数百 MB 到数 GB",
+      "advice": "可清理。仅当正在排查蓝屏或送修分析时需要保留；清掉后无法再分析该次崩溃"
+    },
+    {
+      "id": "updater",
+      "name": "应用更新器安装包",
+      "tier": "L1",
+      "kind": "clean",
+      "regenerable": true,
+      "match": {
+        "segEndsWith": ["-updater"],
+        "ext": [".exe", ".msi", ".msix", ".nupkg", ".7z", ".zip"]
+      },
+      "requires": { "minAgeHours": 24 },
+      "basis": "Electron 系应用自动更新时下载的完整安装包，安装完成后即废弃，且每次更新都会再留一份",
+      "advice": "可清理，是收益/风险比最高的一项。下次检查更新会重新下载"
+    }
+  ]
+}

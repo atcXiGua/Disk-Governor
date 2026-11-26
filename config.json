@@ -1,0 +1,63 @@
+{
+  "version": 2,
+  "schemaVersion": 1,
+  "scope": "C:\\",
+  "rulesDir": "rules",
+  "backupRoot": "D:\\磁盘治理备份",
+  "thresholds": {
+    "tempAgeHours": 72,
+    "dumpAgeHours": 168,
+    "cacheAgeHours": 168,
+    "logAgeHours": 168,
+    "buildAgeHours": 168,
+    "ideAgeHours": 24,
+    "installerAgeDays": 90,
+    "staleDays": 365,
+    "bigFileMB": 500,
+    "dupMinMB": 1,
+    "dupMaxGroupSize": 12,
+    "similarMinCount": 3,
+    "similarMinMB": 20,
+    "maxFiles": 1500000,
+    "maxPlanBytes": 21474836480
+  },
+  "skipDirs": [
+    "$Recycle.Bin",
+    "System Volume Information",
+    "$WinREAgent",
+    "Config.Msi",
+    "Recovery",
+    "$SysReset"
+  ],
+  "whitelist": [
+    "**\\Windows\\System32\\**",
+    "**\\Windows\\SysWOW64\\**",
+    "**\\Windows\\WinSxS\\**",
+    "**\\Windows\\Installer\\**",
+    "**\\Windows\\servicing\\**",
+    "**\\Windows\\assembly\\**",
+    "**\\Windows\\Boot\\**",
+    "**\\Windows\\Fonts\\**",
+    "**\\DriverStore\\**",
+    "**\\Program Files\\**",
+    "**\\Program Files (x86)\\**",
+    "**\\WindowsApps\\**",
+    "**\\ProgramData\\Microsoft\\**",
+    "**\\ProgramData\\Package Cache\\**",
+    "**\\.ssh\\**",
+    "**\\.gnupg\\**",
+    "**\\.aws\\**",
+    "**\\.kube\\**",
+    "**\\.workbuddy\\**",
+    "**\\Documents\\**",
+    "**\\Desktop\\**",
+    "**\\Pictures\\**",
+    "**\\Videos\\**"
+  ],
+  "exclude": [
+    "**\\node_modules\\.cache\\**",
+    "**\\$Recycle.Bin\\**",
+    "**\\Windows\\Prefetch\\**"
+  ],
+  "disabledRules": []
+}

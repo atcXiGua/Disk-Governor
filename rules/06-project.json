@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "group": "project",
+  "description": "开发相关：可重新生成的构建产物与日志。清掉要付重装依赖或丢日志的代价，因此均为 L2。",
+  "rules": [
+    {
+      "id": "build_output",
+      "name": "构建产物与依赖目录",
+      "tier": "L2",
+      "kind": "clean",
+      "regenerable": true,
+      "match": {
+        "segAny": [
+          "node_modules", "__pycache__", ".venv", ".next", ".nuxt",
+          ".turbo", ".parcel-cache", "coverage", "target"
+        ]
+      },
+      "requires": { "minAgeHours": "@buildAgeHours" },
+      "basis": "项目里可重新生成的依赖与编译产物，且超过 7 天未被改动",
+      "advice": "可以清，但该项目下次 npm install / 编译要重来。只在你确认项目近期不用再动时清；正在开发的项目会因命中 7 天规则而自动排除"
+    },
+    {
+      "id": "logs",
+      "name": "日志文件（超过 7 天）",
+      "tier": "L2",
+      "kind": "clean",
+      "regenerable": true,
+      "match": {
+        "any": [
+          { "ext": [".log", ".xlog", ".etl", ".log1", ".log2"] },
+          { "segAny": ["logs"] }
+        ]
+      },
+      "requires": { "minAgeHours": "@logAgeHours" },
+      "basis": "扩展名为 log/etl，或位于 logs 目录，且超过 7 天未改动",
+      "advice": "一般可清。若近期在排查某个软件的问题，先保留最近 7 天的（本规则已自动留出这个窗口）"
+    }
+  ]
+}

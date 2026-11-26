@@ -1,5 +1,5 @@
 @echo off
-chcp 65001
+chcp 65001 >nul
 setlocal
 cd /d "%~dp0"
 title Disk Governor
@@ -15,15 +15,18 @@ if not defined NODE_EXE goto nonode
 echo.
 echo   Disk Governor - starting...
 echo.
-"%NODE_EXE%" server.js
+"%NODE_EXE%" "%~dp0src\server.js"
 echo.
-echo   Stopped.
-pause
+echo   Stopped. Press any key to close.
+pause >nul
 exit /b 0
 
 :nonode
 echo.
-echo   Node.js not found.
+echo   [ERROR] Node.js 18+ not found.
 echo.
-pause
+echo   Either install Node.js, or download the portable build
+echo   which bundles the runtime (no install needed).
+echo.
+pause >nul
 exit /b 1

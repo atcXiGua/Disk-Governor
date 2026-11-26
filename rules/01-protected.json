@@ -1,0 +1,117 @@
+{
+  "schemaVersion": 1,
+  "group": "protected",
+  "description": "L0 禁动：命中即永不进入清理清单。判断依据是「删除会破坏系统/程序」或「属于唯一副本」。本组规则最先生效，优先级高于之后所有分组。",
+  "rules": [
+    {
+      "id": "sys_core",
+      "name": "系统核心与组件库",
+      "tier": "L0",
+      "kind": "deny",
+      "scope": "system",
+      "match": {
+        "pathAny": [
+          "windows/winsxs",
+          "windows/system32",
+          "windows/syswow64",
+          "windows/installer",
+          "windows/servicing",
+          "windows/assembly",
+          "windows/boot",
+          "windows/fonts"
+        ],
+        "notPathAny": ["/driverstore/"]
+      },
+      "basis": "位于 Windows 组件库、System32、安装器数据库或服务栈目录，由 TrustedInstaller 保护",
+      "advice": "禁止文件级删除。要回收 WinSxS 只能 Dism /Online /Cleanup-Image /StartComponentCleanup；Installer 手删会导致程序无法卸载或修复失败"
+    },
+    {
+      "id": "driver_store",
+      "name": "驱动仓库 DriverStore",
+      "tier": "L0",
+      "kind": "deny",
+      "match": { "pathAny": ["/driverstore/"] },
+      "basis": "存放所有已安装驱动的受保护副本，由系统按设备引用计数管理",
+      "advice": "禁止手删。只有同一设备存在 3 个以上版本时，才用 pnputil /delete-driver oemXX.inf /uninstall 删最旧的一份"
+    },
+    {
+      "id": "program_files",
+      "name": "已安装程序目录",
+      "tier": "L0",
+      "kind": "deny",
+      "match": {
+        "pathAny": ["/program files/", "/program files (x86)/", "/windowsapps/"]
+      },
+      "basis": "程序本体与商店应用安装目录，删除会直接破坏软件",
+      "advice": "只能通过「设置 → 应用 → 卸载/重置」或应用商店处理，不要动文件系统"
+    },
+    {
+      "id": "browser_profile_data",
+      "name": "浏览器账号与站点数据",
+      "tier": "L0",
+      "kind": "deny",
+      "match": {
+        "any": [
+          {
+            "pathAll": ["/user data/"],
+            "segAny": [
+              "local storage",
+              "indexeddb",
+              "session storage",
+              "extensions",
+              "sync extensions",
+              "extension state"
+            ]
+          },
+          { "pathAny": ["/service worker/scriptcache/", "/service worker/database/"] },
+          {
+            "pathAll": ["/user data/"],
+            "nameRegex": "^(login data|login data for account|web data|bookmarks|preferences|secure preferences|history|history-journal|cookies|cookies-journal|local state|shortcuts|top sites|favicons)$"
+          },
+          {
+            "pathAll": ["/mozilla/firefox/"],
+            "nameRegex": "^(cookies\\.sqlite|logins\\.json|places\\.sqlite|key4\\.db|prefs\\.js|cert9\\.db)$"
+          }
+        ]
+      },
+      "basis": "保存的密码、书签、Cookie、自动填充与站点本地数据（Local Storage / IndexedDB 里存着绝大多数网站的登录态）",
+      "advice": "永不清理。删了会掉登录、丢密码、丢书签。浏览器内「清除浏览数据」也不要勾这几项"
+    },
+    {
+      "id": "vs_package_cache",
+      "name": "VS/安装器包缓存",
+      "tier": "L0",
+      "kind": "deny",
+      "match": { "pathAny": ["/programdata/package cache/"] },
+      "basis": "Visual Studio 等大型安装器的离线包缓存，卸载与修复都依赖它",
+      "advice": "不要删。删了会导致 VS 无法修复、无法卸载、无法离线安装组件"
+    },
+    {
+      "id": "sys_config",
+      "name": "系统级配置",
+      "tier": "L0",
+      "kind": "deny",
+      "match": { "pathAny": ["/programdata/microsoft/"] },
+      "basis": "系统组件在 ProgramData 下的配置与状态数据",
+      "advice": "不清理。个别子目录（如 Defender 定义缓存）由系统自行回收"
+    },
+    {
+      "id": "key_secret",
+      "name": "密钥与凭据",
+      "tier": "L0",
+      "kind": "deny",
+      "match": { "pathAny": ["/.ssh/", "/.gnupg/", "/.aws/", "/.kube/"] },
+      "basis": "SSH 私钥、GPG 密钥环、云平台凭据",
+      "advice": "永不清理。删了无法恢复，相关服务会全部失效"
+    },
+    {
+      "id": "tool_data",
+      "name": "工具与项目数据",
+      "tier": "L0",
+      "kind": "deny",
+      "match": { "pathAny": ["/.workbuddy/", "/workbuddy/"] },
+      "basis": "AI 工具的运行数据、项目工作区与会话记录",
+      "advice": "不是缓存，不要清理"
+    }
+  ]
+}

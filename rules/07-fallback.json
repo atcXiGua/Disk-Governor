@@ -1,0 +1,24 @@
+{
+  "schemaVersion": 1,
+  "group": "fallback",
+  "description": "兜底规则：前面的明确规则都没命中时的最后一道。必须排在所有文件末尾，且必须由人工确认。",
+  "rules": [
+    {
+      "id": "cache_generic",
+      "name": "其他应用缓存目录",
+      "tier": "L2",
+      "kind": "clean",
+      "regenerable": true,
+      "match": {
+        "segAny": ["cache", "caches"],
+        "notPathAny": [
+          "/local storage/", "/indexeddb/", "/session storage/",
+          "/blob_storage/", "/login data/", "/user data/"
+        ]
+      },
+      "requires": { "minAgeHours": "@cacheAgeHours" },
+      "basis": "路径中含 Cache/Caches 目录，但未匹配到已知应用的明确规则，且超过 7 天未改动",
+      "advice": "逐个确认再清。少数应用会把本地草稿或未同步的数据放在 cache 目录，界面里给了完整路径供你判断"
+    }
+  ]
+}

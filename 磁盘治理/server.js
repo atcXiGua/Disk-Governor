@@ -27,8 +27,17 @@ const jobs = new Map();
 const reports = new Map();
 const plans = new Map();
 
+let configWritable = true;
 function saveConfig() {
-  fs.writeFileSync(CFG_PATH, JSON.stringify(config, null, 2), 'utf8');
+  if (!configWritable) return false;
+  try {
+    fs.writeFileSync(CFG_PATH, JSON.stringify(config, null, 2), 'utf8');
+    return true;
+  } catch {
+    // 打包为单文件可执行程序时，配置文件位于只读快照内
+    configWritable = false;
+    return false;
+  }
 }
 
 function readHistory() {
@@ -185,9 +194,9 @@ const server = http.createServer(async (req, res) => {
           if (Number.isFinite(v) && v >= 0) config.thresholds[k] = v;
         }
       }
-      saveConfig();
+      const persisted = saveConfig();
       planner.reload(config);
-      return json(res, 200, { ok: true, config });
+      return json(res, 200, { ok: true, config, persisted });
     }
 
     if (p === '/api/strategy') {

@@ -80,24 +80,34 @@ Disk Governor 换了个判断入口，只问三个问题：
 
 ## 快速开始
 
-### 方式一：双击（Windows）
+### 方式一：便携版（推荐，无需安装 Node）
+
+解压 `DiskGovernor-2.0.0-win-x64.zip`，双击：
+
+```
+启动.cmd
+```
+
+Node 运行时已打包在内（`node.exe`，约 83 MB），复制到任意 Windows 10/11 机器即可运行，不需要安装任何依赖。
+
+### 方式二：从源码双击
 
 ```
 磁盘治理\启动工具.cmd
 ```
 
-浏览器会自动打开 `http://127.0.0.1:7790`。**关掉那个命令行窗口即退出**，不留后台进程、不装服务、不写注册表。
-
-### 方式二：命令行
+### 方式三：命令行
 
 ```bash
 node 磁盘治理/server.js
 ```
 
+浏览器会自动打开 `http://127.0.0.1:7790`。**关掉那个命令行窗口即退出**，不留后台进程、不装服务、不写注册表。
+
 ### 要求
 
 - Windows 10 / 11
-- Node.js ≥ 18（零第三方依赖，不需要 `npm install`）
+- 源码运行需 Node.js ≥ 18（零第三方依赖，不需要 `npm install`）
 - 端口 7790，被占用会自动顺延至 7800
 
 ---
@@ -175,7 +185,8 @@ node 磁盘治理/server.js
 - [ ] 迁移操作可点击（Shell 已知文件夹改到其他盘）
 - [ ] 报告导出 HTML / CSV 存档
 - [ ] 定时扫描 + 阈值提醒
-- [ ] 单文件 exe 分发（免安装 Node）
+- [ ] 单文件 exe 打包（node SEA / pkg，免解压目录）
+- [x] 便携版分发（Node 运行时随包，免安装）
 - [ ] 跨平台（macOS / Linux 的等价目录规则）
 
 ---
@@ -191,6 +202,19 @@ node --check 磁盘治理/server.js
 ```
 
 自测覆盖 36 条路径用例：System32、Program Files、文档、`.ssh`、DriverStore 必须被拦；Temp、浏览器缓存、`ProgramData` 必须放行。
+
+### 构建分发包
+
+便携版不需要任何构建工具，本质是「Node 运行时 + 程序目录 + 启动脚本」：
+
+```bash
+mkdir -p dist/DiskGovernor-2.0.0-win-x64/app
+cp -r 磁盘治理/. dist/DiskGovernor-2.0.0-win-x64/app/
+cp "$(which node)" dist/DiskGovernor-2.0.0-win-x64/node.exe
+# 放入启动.cmd 后整体压缩即可
+```
+
+约 84 MB（压缩后约 32 MB）。**不要**把 `dist/` 提交进仓库，发布时作为 Release 附件上传。
 
 ---
 

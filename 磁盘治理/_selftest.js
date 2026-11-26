@@ -22,57 +22,57 @@ const CASES = [
   ['Program Files\\SomeApp\\a.exe', 'program_files', '程序本体'],
   ['Program Files (x86)\\Steam\\steam.exe', 'program_files', 'x86 程序'],
   ['Windows\\System32\\DriverStore\\FileRepository\\nv\\a.sys', 'driver_store', '驱动仓库'],
-  ['Users\\zoom\\AppData\\Local\\Google\\Chrome\\User Data\\Default\\Local Storage\\leveldb\\000003.log', 'browser_profile_data', 'Local Storage（含登录态）'],
-  ['Users\\zoom\\AppData\\Local\\Google\\Chrome\\User Data\\Default\\Network\\Cookies', 'browser_profile_data', 'Cookies'],
-  ['Users\\zoom\\AppData\\Local\\Google\\Chrome\\User Data\\Default\\Login Data', 'browser_profile_data', '保存的密码'],
-  ['Users\\zoom\\AppData\\Local\\Google\\Chrome\\User Data\\Default\\IndexedDB\\https_x.indexeddb.leveldb\\a.ldb', 'browser_profile_data', 'IndexedDB'],
-  ['Users\\zoom\\AppData\\Local\\Google\\Chrome\\User Data\\Default\\Cache\\f_0001', 'browser_cache', '纯缓存'],
-  ['Users\\zoom\\AppData\\Local\\Google\\Chrome\\User Data\\Default\\Service Worker\\CacheStorage\\abc', 'browser_cache', 'SW 缓存'],
-  ['Users\\zoom\\AppData\\Local\\Google\\Chrome\\User Data\\Default\\Code Cache\\js\\a', 'browser_cache', 'Code Cache'],
-  ['Users\\zoom\\Desktop\\note.txt', 'user_docs', '桌面'],
-  ['Users\\zoom\\Documents\\report.docx', 'user_docs', '文档'],
-  ['Users\\zoom\\.ssh\\id_rsa', 'key_secret', '私钥'],
-  ['Users\\zoom\\WorkBuddy\\proj\\a.md', 'tool_data', '项目数据'],
-  ['Users\\zoom\\AppData\\Local\\Temp\\old.tmp', 'temp', '100h 临时文件'],
-  ['Users\\zoom\\AppData\\Local\\Temp\\new.tmp', 'temp_recent', '1h 临时文件'],
+  ['Users\\alice\\AppData\\Local\\Google\\Chrome\\User Data\\Default\\Local Storage\\leveldb\\000003.log', 'browser_profile_data', 'Local Storage（含登录态）'],
+  ['Users\\alice\\AppData\\Local\\Google\\Chrome\\User Data\\Default\\Network\\Cookies', 'browser_profile_data', 'Cookies'],
+  ['Users\\alice\\AppData\\Local\\Google\\Chrome\\User Data\\Default\\Login Data', 'browser_profile_data', '保存的密码'],
+  ['Users\\alice\\AppData\\Local\\Google\\Chrome\\User Data\\Default\\IndexedDB\\https_x.indexeddb.leveldb\\a.ldb', 'browser_profile_data', 'IndexedDB'],
+  ['Users\\alice\\AppData\\Local\\Google\\Chrome\\User Data\\Default\\Cache\\f_0001', 'browser_cache', '纯缓存'],
+  ['Users\\alice\\AppData\\Local\\Google\\Chrome\\User Data\\Default\\Service Worker\\CacheStorage\\abc', 'browser_cache', 'SW 缓存'],
+  ['Users\\alice\\AppData\\Local\\Google\\Chrome\\User Data\\Default\\Code Cache\\js\\a', 'browser_cache', 'Code Cache'],
+  ['Users\\alice\\Desktop\\note.txt', 'user_docs', '桌面'],
+  ['Users\\alice\\Documents\\report.docx', 'user_docs', '文档'],
+  ['Users\\alice\\.ssh\\id_rsa', 'key_secret', '私钥'],
+  ['Users\\alice\\WorkBuddy\\proj\\a.md', 'tool_data', '项目数据'],
+  ['Users\\alice\\AppData\\Local\\Temp\\old.tmp', 'temp', '100h 临时文件'],
+  ['Users\\alice\\AppData\\Local\\Temp\\new.tmp', 'temp_recent', '1h 临时文件'],
   ['Windows\\Temp\\x.tmp', 'temp', '系统 Temp'],
-  ['Users\\zoom\\AppData\\Roaming\\SodaMusic\\LunaCacheV2\\a.mflac', 'sodamusic_cache', '音乐缓存'],
-  ['Users\\zoom\\AppData\\Local\\JetBrains\\IntelliJIdea2023.2\\caches\\c.dat', 'ide_cache', 'IDEA 索引'],
-  ['Users\\zoom\\AppData\\Local\\JetBrains\\IntelliJIdea2023.2\\config\\options\\a.xml', 'other', 'IDEA 配置（必须不动）'],
-  ['Users\\zoom\\proj\\node_modules\\a\\b.js', 'build_output', '依赖目录'],
-  ['Users\\zoom\\Downloads\\setup.exe', 'old_installers', '200 天的安装包'],
-  ['Users\\zoom\\Downloads\\doc.pdf', 'user_docs', '下载的文档'],
-  ['Users\\zoom\\AppData\\Local\\app-updater\\pending\\1.2.3.exe', 'updater', '更新器包'],
+  ['Users\\alice\\AppData\\Roaming\\SodaMusic\\LunaCacheV2\\a.mflac', 'sodamusic_cache', '音乐缓存'],
+  ['Users\\alice\\AppData\\Local\\JetBrains\\IntelliJIdea2023.2\\caches\\c.dat', 'ide_cache', 'IDEA 索引'],
+  ['Users\\alice\\AppData\\Local\\JetBrains\\IntelliJIdea2023.2\\config\\options\\a.xml', 'other', 'IDEA 配置（必须不动）'],
+  ['Users\\alice\\proj\\node_modules\\a\\b.js', 'build_output', '依赖目录'],
+  ['Users\\alice\\Downloads\\setup.exe', 'old_installers', '200 天的安装包'],
+  ['Users\\alice\\Downloads\\doc.pdf', 'user_docs', '下载的文档'],
+  ['Users\\alice\\AppData\\Local\\app-updater\\pending\\1.2.3.exe', 'updater', '更新器包'],
   ['Windows\\LiveKernelReports\\WATCHDOG-1.dmp', 'kernel_dump', '内核转储'],
-  ['Users\\zoom\\AppData\\Local\\CrashDumps\\a.dmp', 'app_crash_dumps', '崩溃转储（>7天）'],
-  ['Users\\zoom\\AppData\\Roaming\\Tencent\\xwechat\\msg\\file\\a.pdf', 'wechat_files', '聊天文件'],
-  ['Users\\zoom\\AppData\\Roaming\\Tencent\\xwechat\\all_users\\config\\cache\\x.dat', 'wechat_cache', '微信缓存'],
+  ['Users\\alice\\AppData\\Local\\CrashDumps\\a.dmp', 'app_crash_dumps', '崩溃转储（>7天）'],
+  ['Users\\alice\\AppData\\Roaming\\Tencent\\xwechat\\msg\\file\\a.pdf', 'wechat_files', '聊天文件'],
+  ['Users\\alice\\AppData\\Roaming\\Tencent\\xwechat\\all_users\\config\\cache\\x.dat', 'wechat_cache', '微信缓存'],
   ['Windows\\SoftwareDistribution\\Download\\a.cab', 'win_update', '更新包'],
-  ['Users\\zoom\\AppData\\Local\\Microsoft\\Windows\\Explorer\\thumbcache_256.db', 'thumbcache', '缩略图'],
-  ['Users\\zoom\\AppData\\Roaming\\Code\\Cache\\a', 'vscode_cache', 'VS Code 缓存'],
-  ['Users\\zoom\\AppData\\Roaming\\SomeApp\\Cache\\a.dat', 'electron_cache', 'Electron 缓存']
+  ['Users\\alice\\AppData\\Local\\Microsoft\\Windows\\Explorer\\thumbcache_256.db', 'thumbcache', '缩略图'],
+  ['Users\\alice\\AppData\\Roaming\\Code\\Cache\\a', 'vscode_cache', 'VS Code 缓存'],
+  ['Users\\alice\\AppData\\Roaming\\SomeApp\\Cache\\a.dat', 'electron_cache', 'Electron 缓存']
 ];
 
 const AGE = {
-  'Users\\zoom\\AppData\\Local\\Temp\\old.tmp': 100,
-  'Users\\zoom\\AppData\\Local\\Temp\\new.tmp': 1,
+  'Users\\alice\\AppData\\Local\\Temp\\old.tmp': 100,
+  'Users\\alice\\AppData\\Local\\Temp\\new.tmp': 1,
   'Windows\\Temp\\x.tmp': 100,
-  'Users\\zoom\\AppData\\Local\\JetBrains\\IntelliJIdea2023.2\\caches\\c.dat': 50,
-  'Users\\zoom\\proj\\node_modules\\a\\b.js': 400,
-  'Users\\zoom\\Downloads\\setup.exe': 200 * 24,
-  'Users\\zoom\\Downloads\\doc.pdf': 200 * 24,
-  'Users\\zoom\\AppData\\Local\\app-updater\\pending\\1.2.3.exe': 48,
+  'Users\\alice\\AppData\\Local\\JetBrains\\IntelliJIdea2023.2\\caches\\c.dat': 50,
+  'Users\\alice\\proj\\node_modules\\a\\b.js': 400,
+  'Users\\alice\\Downloads\\setup.exe': 200 * 24,
+  'Users\\alice\\Downloads\\doc.pdf': 200 * 24,
+  'Users\\alice\\AppData\\Local\\app-updater\\pending\\1.2.3.exe': 48,
   'Windows\\LiveKernelReports\\WATCHDOG-1.dmp': 48,
-  'Users\\zoom\\AppData\\Local\\CrashDumps\\a.dmp': 400,
+  'Users\\alice\\AppData\\Local\\CrashDumps\\a.dmp': 400,
   'Windows\\SoftwareDistribution\\Download\\a.cab': 48,
-  'Users\\zoom\\AppData\\Roaming\\Tencent\\xwechat\\all_users\\config\\cache\\x.dat': 48,
-  'Users\\zoom\\AppData\\Roaming\\SomeApp\\Cache\\a.dat': 48,
-  'Users\\zoom\\AppData\\Local\\Temp\\old.log': 200
+  'Users\\alice\\AppData\\Roaming\\Tencent\\xwechat\\all_users\\config\\cache\\x.dat': 48,
+  'Users\\alice\\AppData\\Roaming\\SomeApp\\Cache\\a.dat': 48,
+  'Users\\alice\\AppData\\Local\\Temp\\old.log': 200
 };
 
 const files = CASES.map(([rel]) => file(rel, 5 * 1048576, AGE[rel] != null ? AGE[rel] : 30));
 // 补一个「同一临时目录里的旧日志」，应该仍然算 temp
-files.push(file('Users\\zoom\\AppData\\Local\\Temp\\old.log', 2 * 1048576, 200));
+files.push(file('Users\\alice\\AppData\\Local\\Temp\\old.log', 2 * 1048576, 200));
 
 const ctx = {
   root: 'C:\\',
@@ -95,7 +95,7 @@ for (const [rel, expect, label] of CASES) {
   if (actual === expect) pass++;
   else { fail++; fails.push(`${label}\n    ${rel}\n    期望 ${expect}，实际 ${actual}`); }
 }
-const extra = got.get('Users\\zoom\\AppData\\Local\\Temp\\old.log');
+const extra = got.get('Users\\alice\\AppData\\Local\\Temp\\old.log');
 if (extra === 'temp') pass++; else { fail++; fails.push('临时目录里的旧日志 期望 temp，实际 ' + extra); }
 
 console.log('=== 规则匹配自测 ===');
@@ -132,9 +132,9 @@ console.log('\n=== 白名单双向校验 ===');
 const wlCases = [
   ['C:\\Program Files\\X\\a.exe', 'block'],
   ['C:\\Windows\\WinSxS\\a\\b.dll', 'block'],
-  ['C:\\Users\\zoom\\AppData\\Local\\Temp\\a.tmp', 'allow'],
-  ['C:\\Users\\zoom\\.ssh\\id_rsa', 'block'],
-  ['C:\\Users\\zoom\\Desktop\\a.txt', 'block']
+  ['C:\\Users\\alice\\AppData\\Local\\Temp\\a.tmp', 'allow'],
+  ['C:\\Users\\alice\\.ssh\\id_rsa', 'block'],
+  ['C:\\Users\\alice\\Desktop\\a.txt', 'block']
 ];
 for (const [p, want] of wlCases) {
   const v = planner.check(p, { tier: 'L1' });

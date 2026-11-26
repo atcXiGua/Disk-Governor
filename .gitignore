@@ -1,0 +1,24 @@
+// 依赖与产物
+node_modules/
+dist/
+release/
+*.zip
+
+// 运行时数据（不进版本库）
+history.json
+*.log
+_sandbox_cpu_probe.json
+_uicheck.js
+_selftest_out.txt
+
+// 编辑器与系统
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini
+.DS_Store
+
+// 备份目录绝不入库
+*备份*/
+C盘清理备份*/
+WorkBuddy快照*/

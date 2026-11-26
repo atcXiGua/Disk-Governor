@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>磁盘治理 v2</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --bg:#F4F5F7;--card:#fff;--line:#E6E8EC;--line2:#D8DBE1;
+    --t1:#1B1F24;--t2:#5B6169;--t3:#8A9099;
+    --blue:#2F6FEB;--blue-bg:#EAF1FE;
+    --green:#1E7A46;--green-bg:#E8F6EE;
+    --amber:#8A5D0A;--amber-bg:#FDF4E3;
+    --red:#B93A2C;--red-bg:#FBEAE8;
+    --purple:#5B4BC4;--purple-bg:#EFEDFB;
+    --slate:#4A5568;--slate-bg:#EEF0F4;
+  }
+  body{font-family:"Segoe UI","Microsoft YaHei UI","Microsoft YaHei",system-ui,sans-serif;
+    background:var(--bg);color:var(--t1);font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1120px;margin:0 auto;padding:0 20px 60px}
+  header{padding:20px 0 14px;display:flex;align-items:center;gap:13px;flex-wrap:wrap}
+  .logo{width:40px;height:40px;border-radius:11px;background:linear-gradient(135deg,#2F6FEB,#5B8DF5);
+    display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:18px;color:#fff}
+  h1{font-size:17.5px;font-weight:600;display:flex;align-items:center;gap:8px}
+  .ver{font-size:10.5px;font-weight:500;color:var(--blue);background:var(--blue-bg);padding:1px 6px;border-radius:5px}
+  .sub{font-size:12.5px;color:var(--t2)}
+  .grow{flex:1}
+  button{font-family:inherit;font-size:13px;cursor:pointer;border-radius:9px;border:1px solid var(--line2);
+    background:#fff;color:var(--t1);padding:7px 14px;transition:.15s;white-space:nowrap}
+  button:hover{border-color:#B9BEC7;background:#FAFBFC}
+  button:disabled{opacity:.45;cursor:not-allowed}
+  button.primary{background:var(--blue);border-color:var(--blue);color:#fff;font-weight:500}
+  button.primary:hover:not(:disabled){background:#245ECB}
+  button.danger{background:var(--red);border-color:var(--red);color:#fff}
+  button.ghost{background:transparent;border-color:transparent;color:var(--t2)}
+  button.ghost:hover{background:#EDEFF3;color:var(--t1)}
+  button.sm{padding:4px 10px;font-size:12px;border-radius:7px}
+
+  .toolbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap;background:var(--card);
+    border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:14px}
+  select,input[type=text]{font-family:inherit;font-size:13px;padding:6px 10px;border:1px solid var(--line2);
+    border-radius:8px;background:#fff;color:var(--t1)}
+  select:focus,input:focus{outline:2px solid var(--blue-bg);border-color:var(--blue)}
+  label.chk{display:flex;align-items:center;gap:6px;font-size:13px;color:var(--t2);cursor:pointer;user-select:none}
+
+  .tabs{display:flex;gap:2px;border-bottom:1px solid var(--line);margin-bottom:16px;overflow-x:auto}
+  .tab{padding:9px 14px;font-size:13.5px;color:var(--t2);cursor:pointer;border-bottom:2px solid transparent;
+    white-space:nowrap;background:none;border-radius:0;border-top:0;border-left:0;border-right:0}
+  .tab:hover{color:var(--t1);background:transparent}
+  .tab.on{color:var(--blue);border-bottom-color:var(--blue);font-weight:500}
+  .pane{display:none}.pane.on{display:block}
+
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin-bottom:14px}
+  .card h3{font-size:14px;font-weight:600;margin-bottom:3px}
+  .card .desc{font-size:12.5px;color:var(--t2);margin-bottom:12px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  .grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  .metric{background:#FAFBFC;border-radius:10px;padding:12px 14px}
+  .metric .lbl{font-size:12px;color:var(--t2)}
+  .metric .val{font-size:21px;font-weight:600;margin-top:2px;letter-spacing:-.4px}
+  .metric .hint{font-size:11.5px;color:var(--t3);margin-top:2px}
+
+  .bar{height:6px;border-radius:99px;background:#EDEFF2;overflow:hidden}
+  .bar i{display:block;height:100%;border-radius:99px}
+  .bar.ok i{background:#3FA46A}.bar.warn i{background:#E0A030}.bar.danger i{background:#D9534F}
+
+  .rank{display:flex;align-items:center;gap:10px;padding:5px 0;font-size:12.5px}
+  .rank .n{width:118px;color:var(--t2);flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .rank .track{flex:1;height:8px;background:#F0F2F5;border-radius:99px;overflow:hidden}
+  .rank .track i{display:block;height:100%;background:#8FB4F0;border-radius:99px}
+  .rank .v{width:74px;text-align:right;font-variant-numeric:tabular-nums;flex-shrink:0}
+
+  .cat{background:var(--card);border:1px solid var(--line);border-radius:14px;margin-bottom:11px;overflow:hidden}
+  .cat-head{display:flex;gap:12px;padding:14px 16px;align-items:flex-start}
+  .cat-head.sel{background:#F5F8FE}
+  .cat-main{flex:1;min-width:0}
+  .cat-title{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .cat-name{font-size:14px;font-weight:600}
+  .cat-basis{font-size:12.5px;color:var(--t2);margin-top:5px}
+  .cat-advice{font-size:12.5px;color:var(--t2);margin-top:3px;padding-left:14px;position:relative}
+  .cat-advice::before{content:"→";position:absolute;left:0;color:var(--t3)}
+  .cat-ev{font-size:11.5px;color:var(--t3);margin-top:6px;font-family:Consolas,"Cascadia Mono",monospace}
+  .cat-right{text-align:right;flex-shrink:0;min-width:94px}
+  .cat-size{font-size:15px;font-weight:600;font-variant-numeric:tabular-nums}
+  .cat-cnt{font-size:11.5px;color:var(--t3)}
+  .cat-paths{padding:0 16px 12px 46px;font-size:11.5px;color:var(--t3);
+    font-family:Consolas,"Cascadia Mono",monospace;line-height:1.8}
+  .cat-paths div{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .warn-strip{margin:0 16px 12px 46px;background:var(--amber-bg);color:var(--amber);
+    font-size:12px;padding:7px 10px;border-radius:8px}
+
+  .chip{display:inline-block;font-size:11px;padding:1px 7px;border-radius:6px;font-weight:500;line-height:1.7}
+  .chip.safe{background:var(--green-bg);color:var(--green)}
+  .chip.caution{background:var(--amber-bg);color:var(--amber)}
+  .chip.protected{background:var(--purple-bg);color:var(--purple)}
+  .chip.migrate{background:var(--blue-bg);color:var(--blue)}
+  .chip.lock{background:var(--slate-bg);color:var(--slate)}
+
+  input[type=checkbox]{appearance:none;-webkit-appearance:none;width:17px;height:17px;border:1.5px solid #C3C8D1;
+    border-radius:5px;margin-top:3px;flex-shrink:0;cursor:pointer;position:relative;background:#fff}
+  input[type=checkbox]:checked{background:var(--blue);border-color:var(--blue)}
+  input[type=checkbox]:checked::after{content:"";position:absolute;left:4.5px;top:1.5px;width:5px;height:9px;
+    border:2px solid #fff;border-top:0;border-left:0;transform:rotate(42deg)}
+  input[type=checkbox]:disabled{background:#EDEFF2;border-color:#E0E3E8;cursor:not-allowed}
+
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th{text-align:left;font-weight:500;color:var(--t2);padding:7px 8px;border-bottom:1px solid var(--line);font-size:12px}
+  td{padding:7px 8px;border-bottom:1px solid #F2F4F6;vertical-align:top}
+  tr:last-child td{border-bottom:none}
+  td.num{text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+  .mono{font-family:Consolas,"Cascadia Mono",monospace;font-size:11.5px;word-break:break-all;color:var(--t2)}
+
+  .order-item{display:flex;gap:12px;padding:11px 0;border-bottom:1px solid #F2F4F6;font-size:13px}
+  .order-item:last-child{border-bottom:none}
+  .order-n{width:22px;height:22px;border-radius:50%;background:var(--blue-bg);color:var(--blue);
+    display:flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:600;flex-shrink:0;margin-top:2px}
+  .order-body{flex:1}
+  .order-top{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+  .order-cat{font-weight:500}
+  .order-act{font-size:12.5px;color:var(--t2);margin-top:1px}
+  .order-size{font-variant-numeric:tabular-nums;font-weight:500;white-space:nowrap}
+
+  .footer{position:sticky;bottom:0;background:rgba(255,255,255,.94);backdrop-filter:blur(12px);
+    border-top:1px solid var(--line);padding:12px 0;display:flex;align-items:center;gap:12px;margin-top:16px}
+  .foot-sum{font-size:13px;color:var(--t2)}
+  .foot-sum b{font-size:15px;color:var(--t1)}
+  .foot-sum .est{color:var(--blue);font-weight:600}
+
+  .overlay{position:fixed;inset:0;background:rgba(24,28,34,.45);display:none;align-items:center;
+    justify-content:center;z-index:50;padding:20px}
+  .overlay.show{display:flex}
+  .modal{background:#fff;border-radius:16px;padding:24px 26px;max-width:560px;width:100%;
+    max-height:86vh;overflow:auto;box-shadow:0 20px 60px rgba(16,20,28,.3)}
+  .modal h3{font-size:16px;font-weight:600;margin-bottom:8px}
+  .modal .acts{display:flex;gap:10px;justify-content:flex-end;margin-top:18px}
+  .progress{height:5px;background:#EDEFF2;border-radius:99px;overflow:hidden;margin:14px 0 8px}
+  .progress i{display:block;height:100%;background:var(--blue);border-radius:99px;transition:width .3s}
+  .scan-line{font-size:12px;color:var(--t3);font-family:Consolas,monospace;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  textarea{width:100%;font-family:Consolas,monospace;font-size:12px;border:1px solid var(--line2);
+    border-radius:8px;padding:9px 11px;min-height:110px;resize:vertical;line-height:1.7}
+  .empty{text-align:center;padding:44px 20px;color:var(--t3);font-size:13px}
+  .empty b{display:block;color:var(--t2);font-size:14px;margin-bottom:4px;font-weight:500}
+  .toast{position:fixed;left:50%;top:18px;transform:translateX(-50%) translateY(-14px);background:#252A31;
+    color:#fff;font-size:13px;padding:9px 16px;border-radius:10px;opacity:0;transition:.25s;z-index:60;pointer-events:none}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  .note{font-size:12px;color:var(--t3);line-height:1.9}
+  @media(max-width:820px){.grid2,.grid3,.grid4{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo">◧</div>
+    <div>
+      <h1>磁盘治理 <span class="ver">v2 · 按可再生性分级</span></h1>
+      <div class="sub">规则引擎 · L0–L3 分层 · 可确认清单 · 试运行</div>
+    </div>
+    <div class="grow"></div>
+    <button class="ghost" id="btnRules">白名单与阈值</button>
+  </header>
+
+  <div class="toolbar">
+    <span style="font-size:13px;color:var(--t2)">扫描范围</span>
+    <select id="scope"></select>
+    <input type="text" id="scopePath" placeholder="或手填绝对路径，如 D:\Projects\" style="width:230px">
+    <label class="chk"><input type="checkbox" id="deep"> 深度（检测重复文件）</label>
+    <div class="grow"></div>
+    <button class="primary" id="btnScan">开始扫描</button>
+  </div>
+
+  <div class="tabs" id="tabs">
+    <button class="tab on" data-pane="overview">空间概览</button>
+    <button class="tab" data-pane="cats">分类与分层</button>
+    <button class="tab" data-pane="dup">重复与相似</button>
+    <button class="tab" data-pane="hints">待判断</button>
+    <button class="tab" data-pane="plan">清理清单</button>
+    <button class="tab" data-pane="strategy">策略与规则</button>
+  </div>
+
+  <div class="pane on" id="pane-overview">
+    <div class="empty"><b>还没有扫描结果</b>选好范围后点「开始扫描」。首选空盘符 C:\，只读扫描，不动任何文件</div>
+  </div>
+  <div class="pane" id="pane-cats"></div>
+  <div class="pane" id="pane-dup"></div>
+  <div class="pane" id="pane-hints"></div>
+  <div class="pane" id="pane-plan"></div>
+  <div class="pane" id="pane-strategy"></div>
+
+  <div class="footer" id="footer" style="display:none">
+    <div class="foot-sum" id="footSum">未选择类目</div>
+    <div class="grow"></div>
+    <button id="btnPlan" disabled>生成清理清单</button>
+  </div>
+</div>
+
+<div class="overlay" id="overlay"><div class="modal" id="modal"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+const $ = id => document.getElementById(id);
+const state = { cfg:null, tiers:null, report:null, reportId:null, selected:new Set(), plan:null, job:null, strategy:null };
+
+const fmt = n => {
+  if (!n) return '0 B';
+  const u = ['B','KB','MB','GB','TB']; let i = 0, v = Number(n);
+  while (v >= 1024 && i < u.length-1) { v /= 1024; i++; }
+  return v.toFixed(v >= 100 || i === 0 ? 0 : 2) + ' ' + u[i];
+};
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const TIER_TXT = { L0:'L0 禁动', L1:'L1 零代价', L2:'L2 有代价', L3:'L3 仅迁移' };
+function tierChip(t){ return `<span class="chip ${t==='L1'?'safe':t==='L2'?'caution':t==='L3'?'migrate':'protected'}">${TIER_TXT[t]||t}</span>`; }
+
+function toast(msg){ const t=$('toast'); t.textContent=msg; t.classList.add('show');
+  clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove('show'),2600); }
+
+async function api(url, opt){
+  const r = await fetch(url, opt);
+  let d = null;
+  try { d = await r.json(); } catch { throw new Error('HTTP ' + r.status); }
+  if (!d.ok) { const e = new Error(d.error || '请求失败'); e.payload = d; throw e; }
+  return d;
+}
+const post = (url, b) => api(url, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(b)});
+
+document.querySelectorAll('.tab').forEach(t => t.onclick = () => {
+  document.querySelectorAll('.tab').forEach(x => x.classList.toggle('on', x === t));
+  document.querySelectorAll('.pane').forEach(p => p.classList.toggle('on', p.id === 'pane-' + t.dataset.pane));
+  if (t.dataset.pane === 'strategy') renderStrategy();
+});
+
+async function init(){
+  try{
+    const d = await api('/api/config');
+    state.cfg = d.config; state.tiers = d.tiers;
+    const sel = $('scope');
+    sel.innerHTML = (d.drives||[]).map(dr =>
+      `<option value="${dr.id}\\">${dr.id}　可用 ${fmt(dr.free)} / 共 ${fmt(dr.total)}</option>`).join('');
+    if (state.cfg.scope) {
+      const hit = [...sel.options].find(o => o.value.toLowerCase() === state.cfg.scope.toLowerCase());
+      if (hit) sel.value = hit.value;
+    }
+  }catch(e){ toast('读取配置失败：' + e.message); }
+}
+
+$('btnRules').onclick = async () => {
+  const c = state.cfg || (await api('/api/config')).config;
+  $('modal').innerHTML = `
+    <h3>白名单与阈值</h3>
+    <div style="font-size:12.5px;color:var(--t2);margin-bottom:14px">
+      白名单是最后一道网：命中即不进清单，优先级高于所有规则。支持 * 与 ** 通配。
+    </div>
+    <div style="font-size:12.5px;font-weight:500;margin-bottom:6px">白名单（禁止清理）</div>
+    <textarea id="wl">${esc((c.whitelist||[]).join('\n'))}</textarea>
+    <div style="font-size:12.5px;font-weight:500;margin:12px 0 6px">排除规则（不进扫描）</div>
+    <textarea id="ex" style="min-height:70px">${esc((c.exclude||[]).join('\n'))}</textarea>
+    <div style="font-size:12.5px;font-weight:500;margin:12px 0 6px">阈值</div>
+    <div class="grid3" style="gap:10px">
+      <label class="note">临时文件（小时）<input type="text" id="t1" value="${c.thresholds.tempAgeHours}" style="width:100%;margin-top:4px"></label>
+      <label class="note">缓存/日志（小时）<input type="text" id="t2" value="${c.thresholds.cacheAgeHours}" style="width:100%;margin-top:4px"></label>
+      <label class="note">大文件（MB）<input type="text" id="t3" value="${c.thresholds.bigFileMB}" style="width:100%;margin-top:4px"></label>
+      <label class="note">陈旧（天）<input type="text" id="t4" value="${c.thresholds.staleDays}" style="width:100%;margin-top:4px"></label>
+      <label class="note">旧安装包（天）<input type="text" id="t5" value="${c.thresholds.installerAgeDays}" style="width:100%;margin-top:4px"></label>
+      <label class="note">单次上限（GB）<input type="text" id="t6" value="${Math.round(c.thresholds.maxPlanBytes/1073741824)}" style="width:100%;margin-top:4px"></label>
+    </div>
+    <div class="acts">
+      <button onclick="closeModal()">取消</button>
+      <button class="primary" onclick="saveRules()">保存</button>
+    </div>`;
+  $('overlay').classList.add('show');
+};
+window.closeModal = () => $('overlay').classList.remove('show');
+window.saveRules = async () => {
+  try{
+    const d = await post('/api/config', {
+      whitelist: $('wl').value.split('\n').map(s=>s.trim()).filter(Boolean),
+      exclude: $('ex').value.split('\n').map(s=>s.trim()).filter(Boolean),
+      thresholds: {
+        tempAgeHours:+$('t1').value, cacheAgeHours:+$('t2').value, bigFileMB:+$('t3').value,
+        staleDays:+$('t4').value, installerAgeDays:+$('t5').value,
+        maxPlanBytes: Math.round(+$('t6').value*1073741824)
+      }
+    });
+    state.cfg = d.config; closeModal(); toast('已保存，重扫后生效');
+  }catch(e){ toast('保存失败：' + e.message); }
+};
+
+$('btnScan').onclick = async () => {
+  const scope = $('scopePath').value.trim() || $('scope').value;
+  $('btnScan').disabled = true;
+  showScan('正在扫描 ' + scope);
+  try{
+    const d = await post('/api/scan', {scope, deep: $('deep').checked});
+    state.job = d.jobId;
+    poll(d.jobId);
+  }catch(e){
+    $('btnScan').disabled = false; closeModal();
+    toast('扫描启动失败：' + e.message);
+  }
+};
+
+function showScan(label){
+  $('modal').innerHTML = `
+    <h3>${esc(label)}</h3>
+    <div class="progress"><i id="pbar" style="width:2%"></i></div>
+    <div class="scan-line" id="pline">准备中…</div>
+    <div style="display:flex;gap:16px;margin-top:10px;font-size:12.5px;color:var(--t2)">
+      <span>文件 <b id="pscan">0</b></span>
+      <span>目录 <b id="pdir">0</b></span>
+      <span>体积 <b id="pbyte">0</b></span>
+    </div>
+    <div class="note" style="margin-top:12px">扫描是只读的，期间可以继续用电脑，不要关闭这个页面</div>`;
+  $('overlay').classList.add('show');
+}
+
+const PHASE = { scan:'遍历文件系统', classify:'规则判定与分层', dup:'检测重复文件', similar:'检测相似文件名', report:'生成报告' };
+
+function poll(jobId){
+  const tick = async () => {
+    let j;
+    try { j = await api('/api/job/' + jobId); }
+    catch(e){ toast('任务丢失：' + e.message); $('btnScan').disabled = false; return; }
+    if (j.phase === 'error'){ $('btnScan').disabled = false; closeModal(); toast('扫描失败：' + (j.error||'').slice(0,120)); return; }
+    if (j.done){
+      $('btnScan').disabled = false; closeModal();
+      state.reportId = j.reportId;
+      await loadReport(j.reportId);
+      const s = j.summary || {};
+      toast(`扫描完成：${(s.files||0).toLocaleString()} 个文件，可释放 ${fmt(s.reclaimable)}`);
+      return;
+    }
+    const bar=$('pbar'), line=$('pline');
+    if (bar && line){
+      let pct = 2;
+      if (j.phase === 'scan') pct = Math.min(86, 2 + ((j.scanned||0)/450000)*84);
+      else if (j.phase === 'dup') pct = 88 + Math.min(9, (j.dupTotal ? j.dupDone/j.dupTotal*9 : 1));
+      else pct = 96;
+      bar.style.width = pct.toFixed(1) + '%';
+      line.textContent = (PHASE[j.phase]||'处理中') + (j.current ? '  ·  ' + j.current : '');
+      if ($('pscan')) $('pscan').textContent = (j.scanned||0).toLocaleString();
+      if ($('pdir')) $('pdir').textContent = (j.dirs||0).toLocaleString();
+      if ($('pbyte')) $('pbyte').textContent = fmt(j.bytes||0);
+    }
+    setTimeout(tick, 600);
+  };
+  tick();
+}
+
+async function loadReport(id){
+  const d = await api('/api/report?id=' + id);
+  state.report = d.report;
+  state.selected.clear();
+  state.plan = null;
+  renderAll();
+  document.querySelector('.tab[data-pane="overview"]').click();
+}
+
+function renderAll(){
+  renderOverview(); renderCats(); renderDup(); renderHints(); renderPlanPane(); updateFooter();
+}
+
+function renderOverview(){
+  const r = state.report; if (!r) return;
+  const o = r.overview, e = r.estimate;
+  const pct = o.disk.usedPct;
+  const cls = pct >= 90 ? 'danger' : pct >= 80 ? 'warn' : 'ok';
+  const maxTop = Math.max(1, ...o.byTopDir.map(x => x.bytes));
+  const maxExt = Math.max(1, ...o.byExt.map(x => x.bytes));
+  const maxAge = Math.max(1, ...o.byAge.map(x => x.bytes));
+
+  $('pane-overview').innerHTML = `
+    <div class="grid4" style="margin-bottom:14px">
+      <div class="card" style="margin:0">
+        <div style="display:flex;align-items:baseline;gap:6px">
+          <span style="font-size:13px;font-weight:600">${esc(r.scope)}</span>
+          <span style="font-size:11.5px;color:${pct>=90?'var(--red)':pct>=80?'var(--amber)':'var(--t3)'}">
+            ${pct>=90?'空间告急':pct>=80?'偏紧':'正常'}</span>
+        </div>
+        <div style="font-size:26px;font-weight:600;letter-spacing:-.6px;margin:6px 0 2px">${o.disk.freeHuman}</div>
+        <div style="font-size:12px;color:var(--t3);margin-bottom:9px">可用 / 共 ${o.disk.totalHuman}</div>
+        <div class="bar ${cls}"><i style="width:${pct}%"></i></div>
+        <div style="font-size:11.5px;color:var(--t3);margin-top:6px">已用 ${pct}%</div>
+      </div>
+      <div class="card" style="margin:0">
+        <div class="metric" style="padding:0;background:none">
+          <div class="lbl">现在就能清</div>
+          <div class="val" style="color:var(--green)">${e.nowHuman}</div>
+          <div class="hint">${e.pendingBytes ? '另有 '+e.pendingHuman+' 需先关闭程序' : '前置条件全部满足'}</div>
+        </div>
+        <div style="height:1px;background:var(--line);margin:10px 0"></div>
+        <div class="note">L1 ${e.l1Human} · L2 ${e.l2Human}（含待关闭项）<br>L3 可迁移 ${e.l3Human}　L0 ${e.l0Human}</div>
+      </div>
+      <div class="card" style="margin:0">
+        <div class="metric" style="padding:0;background:none">
+          <div class="lbl">已扫描</div>
+          <div class="val">${(r.probe.files||0).toLocaleString()}</div>
+          <div class="hint">${(r.probe.dirs||0).toLocaleString()} 个目录 · ${r.probe.scannedHuman}</div>
+        </div>
+        <div style="height:1px;background:var(--line);margin:10px 0"></div>
+        <div class="note">耗时 ${(r.probe.durationMs/1000).toFixed(1)} 秒${r.probe.denied?` · 无权限 ${r.probe.denied}`:''}<br>
+          ${r.probe.truncated?'<span style="color:var(--red)">已达文件上限，结果不完整</span>':'范围完整'}</div>
+      </div>
+      <div class="card" style="margin:0">
+        <div class="metric" style="padding:0;background:none">
+          <div class="lbl">阶段一可清</div>
+          <div class="val">${(r.budget[0]||{}).human||'0 B'}</div>
+          <div class="hint">零风险项，见下预算表</div>
+        </div>
+        <div style="height:1px;background:var(--line);margin:10px 0"></div>
+        <div class="note">重复浪费 ${esc(r.duplicates.wastedHuman)}<br>仅提示，不自动清</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>分层汇总</h3>
+      <div class="desc">同一份内容按「删了能不能自己长回来」归层，而不是按目录名</div>
+      <div class="grid4">
+        ${r.tiers.map(t => `<div class="metric" style="border:1px solid ${t.tier==='L1'?'#CFE9DA':t.tier==='L2'?'#F2E2BE':t.tier==='L3'?'#D5E2FB':'#DEDAF6'}">
+          <div class="lbl" style="display:flex;gap:6px;align-items:center">${tierChip(t.tier)}
+            <span>${esc(t.label)}</span></div>
+          <div class="val" style="font-size:19px">${fmt(t.bytes)}</div>
+          <div class="hint">${t.count.toLocaleString()} 个文件 · ${t.cats.length} 类</div>
+        </div>`).join('')}
+      </div>
+      <div class="note" style="margin-top:12px">
+        ${r.tiers.map(t => `· <b>${t.tier}</b> ${esc(t.desc)}`).join('<br>')}
+      </div>
+    </div>
+
+    ${pendingBlock(r)}
+
+    <div class="card">
+      <h3>五阶段预算</h3>
+      <div class="desc">按策略文档的执行顺序，各阶段集合互斥、不重复计数；后两阶段需人工操作</div>
+      <table><thead><tr><th style="width:34px">阶段</th><th>内容</th><th style="text-align:right">预计回收</th>
+        <th style="text-align:right">执行后可用</th></tr></thead><tbody>
+        ${r.budget.map(b => `<tr>
+          <td style="font-weight:600">${esc(b.stage)}</td>
+          <td><div style="font-weight:500">${esc(b.title)}${b.manual?' <span class="chip lock">人工</span>':''}</div>
+            <div class="note">${esc(b.action)}</div></td>
+          <td class="num">${esc(b.human)}${b.pendingBytes?`<div class="note">其中 ${esc(b.pendingHuman)} 需先关程序</div>`:''}</td>
+          <td class="num">${esc(b.freeAfterHuman)}</td></tr>`).join('')}
+      </tbody></table>
+      <div class="note" style="margin-top:10px">执行后可用 = 当前 ${o.disk.freeHuman} + 前面各阶段累计，阶段四按 2GB 下限估值</div>
+    </div>
+
+    <div class="grid2">
+      <div class="card">
+        <h3>占用构成 · 按目录</h3>
+        <div class="desc">磁盘上哪些顶层目录吃掉最多空间</div>
+        ${o.byTopDir.map(x => `<div class="rank"><span class="n" title="${esc(x.key)}">${esc(x.key)}</span>
+          <span class="track"><i style="width:${(x.bytes/maxTop*100).toFixed(1)}%"></i></span>
+          <span class="v">${x.human}</span></div>`).join('')}
+      </div>
+      <div class="card">
+        <h3>占用构成 · 按类型</h3>
+        <div class="desc">扩展名维度的体积分布</div>
+        ${o.byExt.map(x => `<div class="rank"><span class="n" title="${esc(x.key)}">${esc(x.key)}</span>
+          <span class="track"><i style="width:${(x.bytes/maxExt*100).toFixed(1)}%"></i></span>
+          <span class="v">${x.human}</span></div>`).join('')}
+      </div>
+    </div>
+
+    <div class="grid2">
+      <div class="card">
+        <h3>文件年龄分布</h3>
+        <div class="desc">${esc((r.atime||{}).note||'')}</div>
+        ${o.byAge.map(x => `<div class="rank"><span class="n">${esc(x.key)}</span>
+          <span class="track"><i style="width:${(x.bytes/maxAge*100).toFixed(1)}%"></i></span>
+          <span class="v">${x.human}</span></div>`).join('')}
+      </div>
+      <div class="card">
+        <h3>建议处理顺序</h3>
+        <div class="desc">按风险从低到高，最后一步是验收</div>
+        <div style="max-height:340px;overflow:auto">
+        ${r.order.map(s => `<div class="order-item"><div class="order-n">${s.step}</div>
+          <div class="order-body"><div class="order-top"><span class="order-cat">${esc(s.category)}</span>
+          ${s.manual?'<span class="chip lock">人工</span>':tierChip(s.tier)}</div>
+          <div class="order-act">${esc(s.action)}</div></div>
+          <div class="order-size">${s.human}</div></div>`).join('') || '<div class="note">暂无可清理项</div>'}
+        </div>
+      </div>
+    </div>`;
+}
+
+function pendingBlock(r){
+  const e = r.estimate;
+  if (!e || !e.pendingBytes) return '';
+  const list = r.categories.filter(c => c.baseSelectable && !c.requiresMet);
+  if (!list.length) return '';
+  return `<div class="card" style="border-color:#F2E2BE;background:#FFFDF8">
+    <h3>需要先关闭程序</h3>
+    <div class="desc">这些是 L1/L2 可清理项，但对应程序正在运行。关掉程序后点「重新检测」，不用重扫</div>
+    <table><thead><tr><th>类目</th><th style="text-align:right">体积</th><th>原因</th></tr></thead><tbody>
+    ${list.map(c => `<tr><td>${esc(c.name)} ${tierChip(c.tier)}</td>
+      <td class="num">${fmt(c.bytes)}</td>
+      <td class="note">${esc(c.blockReason||'')}</td></tr>`).join('')}
+    </tbody></table>
+    <div style="margin-top:12px"><button class="primary sm" onclick="recheck()">重新检测</button></div>
+  </div>`;
+}
+
+window.recheck = async () => {
+  if (!state.reportId) return;
+  try{
+    const d = await post('/api/recheck', {reportId: state.reportId});
+    const rd = await api('/api/report?id=' + state.reportId);
+    state.report = rd.report;
+    renderAll();
+    toast(d.changed ? `有 ${d.changed} 个类目状态变化，现在可清 ${d.nowHuman}` : '状态没有变化，对应程序仍在运行');
+  }catch(e){ toast('重新检测失败：' + e.message); }
+};
+
+let selCatMap = new Map();
+function renderCats(){
+  const r = state.report; if (!r) return;
+  const cats = r.categories;
+  if (!cats.length){ $('pane-cats').innerHTML = '<div class="empty">没有命中任何规则</div>'; return; }
+  selCatMap = new Map(cats.map(c => [c.id, c]));
+
+  const byTier = {};
+  for (const c of cats) (byTier[c.tier] = byTier[c.tier] || []).push(c);
+  const order = ['L1','L2','L3','L0'];
+
+  $('pane-cats').innerHTML = `
+    <div class="card" style="padding:13px 16px">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <span style="font-size:13px;color:var(--t2)">勾选要纳入清单的类目。L0 与 L3 不可勾选，它们只出现在报告里</span>
+        <div class="grow"></div>
+        <button class="sm" onclick="selectTier('L1')">只选 L1</button>
+        <button class="sm" onclick="selectTier('L1L2')">选 L1+L2</button>
+        <button class="sm" onclick="clearSel()">清空</button>
+      </div>
+    </div>
+    ` + order.filter(t => byTier[t]).map(t => {
+      const list = byTier[t];
+      const total = list.reduce((s,c) => s + c.bytes, 0);
+      return `<div style="display:flex;align-items:center;gap:9px;margin:18px 0 9px">
+        ${tierChip(t)}<span style="font-size:13.5px;font-weight:600">${esc(state.tiers[t].label)}</span>
+        <span class="note">${esc(state.tiers[t].desc)}</span>
+        <div class="grow"></div><span class="note">${fmt(total)}</span></div>`
+      + list.map(c => catCard(c)).join('');
+    }).join('');
+
+  $('pane-cats').querySelectorAll('input[data-cat]').forEach(cb => {
+    cb.onchange = () => {
+      if (cb.checked) state.selected.add(cb.dataset.cat); else state.selected.delete(cb.dataset.cat);
+      const head = cb.closest('.cat').querySelector('.cat-head');
+      if (head) head.classList.toggle('sel', cb.checked);
+      updateFooter();
+    };
+  });
+}
+
+function catCard(c){
+  const sel = state.selected.has(c.id);
+  const lock = !c.selectable;
+  const lockTxt = c.tier==='L0' ? '只报告' : c.tier==='L3' ? '只迁移' : c.kind==='hold' ? '本轮不清' : (c.blockReason ? '条件不满足' : '不可选');
+  return `<div class="cat">
+    <div class="cat-head ${sel?'sel':''}">
+      <input type="checkbox" data-cat="${c.id}" ${sel?'checked':''} ${lock?'disabled':''}>
+      <div class="cat-main">
+        <div class="cat-title"><span class="cat-name">${esc(c.name)}</span>
+          ${c.regenerable?'<span class="chip safe">可再生</span>':'<span class="chip lock">不可再生</span>'}
+          ${lock?`<span class="chip lock">${lockTxt}</span>`:''}
+          ${c.tier==='L2'&&c.kind==='clean'?'<span class="chip caution">需确认</span>':''}
+        </div>
+        <div class="cat-basis"><b style="color:var(--t3)">判断依据</b>　${esc(c.basis)}</div>
+        <div class="cat-advice">${esc(c.advice)}</div>
+        <div class="cat-ev">${esc(c.evidence)}</div>
+      </div>
+      <div class="cat-right">
+        <div class="cat-size">${fmt(c.bytes)}</div>
+        <div class="cat-cnt">${c.count.toLocaleString()} 个文件</div>
+      </div>
+    </div>
+    ${!c.requiresMet && c.blockReason ? `<div class="warn-strip">本轮不可清理：${esc(c.blockReason)}
+      ${c.requires && c.requires.noProcess ? '<button class="sm" style="margin-left:8px" onclick="recheck()">已关闭，重新检测</button>' : ''}</div>`:''}
+    ${c.items.length ? `<div class="cat-paths">${c.items.slice(0,4).map(i =>
+      `<div title="${esc(i.path)}">${esc(i.path)}　<span style="color:#A9AFB8">${fmt(i.size)}</span></div>`).join('')}
+      ${c.truncated?`<div style="color:#A9AFB8">… 共 ${c.count.toLocaleString()} 个，生成清单时会全部展开</div>`:''}</div>`:''}
+  </div>`;
+}
+
+window.selectTier = (which) => {
+  state.selected.clear();
+  state.report.categories.forEach(c => {
+    if (!c.selectable) return;
+    if (which === 'L1' && c.tier === 'L1') state.selected.add(c.id);
+    if (which === 'L1L2' && (c.tier === 'L1' || c.tier === 'L2')) state.selected.add(c.id);
+  });
+  renderCats(); updateFooter();
+};
+window.clearSel = () => { state.selected.clear(); renderCats(); updateFooter(); };
+
+function updateFooter(){
+  const r = state.report;
+  if (!r){ $('footer').style.display='none'; return; }
+  $('footer').style.display='flex';
+  const sel = [...state.selected].map(id => selCatMap.get(id)).filter(Boolean);
+  const bytes = sel.reduce((s,c) => s + c.bytes, 0);
+  $('footSum').innerHTML = sel.length
+    ? `已选 <b>${sel.length}</b> 类 · 涉及 <span class="est">${fmt(bytes)}</span>`
+    : '未选择类目 — 先在「分类与分层」里勾选';
+  $('btnPlan').disabled = !sel.length;
+}
+
+function renderDup(){
+  const r = state.report; if (!r) return;
+  const d = r.duplicates, s = r.similar.groups;
+  const dupHtml = !d.groupCount
+    ? `<div class="empty"><b>未发现完全重复的文件</b>
+        重复检测只覆盖 ≥ ${r.thresholds.dupMinMB} MB 的文件，需要勾选「深度」重扫</div>`
+    : d.groups.map((g,i) => `<div class="cat">
+        <div class="cat-head">
+          <div class="cat-main">
+            <div class="cat-title"><span class="cat-name">第 ${i+1} 组 · ${g.count} 份逐字节相同</span>
+              <span class="chip caution">可省 ${fmt(g.wasted)}</span></div>
+            <div class="cat-basis">单份 ${fmt(g.size)}　·　${esc(g.note||'')}</div>
+            <div class="cat-advice">建议保留：${esc(g.keep)}</div>
+          </div>
+          <div class="cat-right"><div class="cat-size">${fmt(g.wasted)}</div>
+            <div class="cat-cnt">浪费空间</div></div>
+        </div>
+        <div class="cat-paths">${g.files.map(f => `<div title="${esc(f.path)}">${esc(f.path)}
+          <span style="color:#A9AFB8">　${fmt(f.size)} · ${f.days} 天前</span></div>`).join('')}</div>
+      </div>`).join('');
+
+  const simHtml = !s.length
+    ? '<div class="empty"><b>未发现相似文件组</b>同类命名达到阈值才会归组</div>'
+    : s.map(g => `<div class="cat"><div class="cat-head">
+        <div class="cat-main">
+          <div class="cat-title"><span class="cat-name">${esc(g.key)}</span>
+            <span class="chip lock">${g.count} 个文件</span></div>
+          <div class="cat-basis">去掉序号、副本、日期后同名。仅作合并参考，不能整组删</div>
+        </div>
+        <div class="cat-right"><div class="cat-size">${fmt(g.totalBytes)}</div>
+          <div class="cat-cnt">合计</div></div>
+      </div>
+      <div class="cat-paths">${g.files.slice(0,6).map(f => `<div title="${esc(f.path)}">${esc(f.path)}
+        <span style="color:#A9AFB8">　${fmt(f.size)}</span></div>`).join('')}</div></div>`).join('');
+
+  $('pane-dup').innerHTML = `
+    <div class="card"><h3>完全重复的文件</h3>
+      <div class="desc">${esc(d.note)}　共 ${d.groupCount} 组，浪费 ${d.wastedHuman}</div></div>
+    ${dupHtml}
+    <div class="card" style="margin-top:16px"><h3>相似文件名</h3>
+      <div class="desc">${esc(r.similar.note)}　共 ${s.length} 组</div></div>
+    ${simHtml}`;
+}
+
+function renderHints(){
+  const r = state.report; if (!r) return;
+  const h = r.hints;
+  const row = (f) => `<tr><td class="mono">${esc(f.path)}</td>
+    <td class="num">${f.human}</td><td class="num">${f.days} 天</td></tr>`;
+  $('pane-hints').innerHTML = `
+    <div class="card" style="border-color:#F2E2BE;background:#FFFDF8">
+      <h3>这里的内容不进清理清单</h3>
+      <div class="desc" style="margin:0">${esc(h.note)}</div>
+    </div>
+    <div class="card"><h3>大文件（单个 ≥ ${h.bigThresholdMB} MB）</h3>
+      <div class="desc">${h.bigFiles.length} 个。按类型判断：媒体/镜像/备份可迁到 D 盘，程序安装包可移走</div>
+      ${h.bigFiles.length ? `<table><thead><tr><th>路径</th><th style="text-align:right">大小</th>
+        <th style="text-align:right">未改动</th></tr></thead><tbody>
+        ${h.bigFiles.map(row).join('')}</tbody></table>` : '<div class="empty">没有超过阈值的大文件</div>'}
+    </div>
+    <div class="card"><h3>长期未用（≥ ${h.staleDays} 天，且 ≥ 10 MB）</h3>
+      <div class="desc">${h.staleFiles.length} 个。年龄不等于可再生，优先考虑迁移而不是删除</div>
+      ${h.staleFiles.length ? `<table><thead><tr><th>路径</th><th style="text-align:right">大小</th>
+        <th style="text-align:right">未改动</th></tr></thead><tbody>
+        ${h.staleFiles.map(row).join('')}</tbody></table>` : '<div class="empty">没有符合条件的陈旧大文件</div>'}
+    </div>`;
+}
+
+function renderPlanPane(){
+  const p = state.plan;
+  if (!p){
+    $('pane-plan').innerHTML = `<div class="empty"><b>还没有生成清单</b>
+      在「分类与分层」勾选类目，点底部「生成清理清单」。默认只生成清单，不会动任何文件</div>`;
+    return;
+  }
+  const rejected = p.rejected || [];
+  $('pane-plan').innerHTML = `
+    <div class="card">
+      <h3>清单已生成（未执行）</h3>
+      <div class="desc">这一步只是列出会被移动的文件。确认无误后再试运行，最后才执行</div>
+      <div class="grid4">
+        <div class="metric"><div class="lbl">涉及文件</div><div class="val">${p.totalCount.toLocaleString()}</div></div>
+        <div class="metric"><div class="lbl">预计释放</div><div class="val" style="color:var(--green)">${fmt(p.totalBytes)}</div></div>
+        <div class="metric"><div class="lbl">被规则拦截</div><div class="val">${p.blockedCount}</div>
+          <div class="hint">${p.blockedCount?'命中白名单或分层限制':'无'}</div></div>
+        <div class="metric"><div class="lbl">被拒绝的类目</div><div class="val">${rejected.length}</div>
+          <div class="hint">${rejected.length?'见下方说明':'无'}</div></div>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap">
+        <button class="primary" onclick="doDryRun()">试运行（不移动）</button>
+        <button class="danger" onclick="doMove()">执行移动</button>
+        <button class="ghost" onclick="state.plan=null;renderPlanPane();">重新生成</button>
+      </div>
+      <div class="note" style="margin-top:10px">
+        备份目录：${esc(p.backupRoot)}　·　执行后会生成 _移动清单.csv 与 _还原.ps1，双击可原样搬回
+      </div>
+    </div>
+    ${rejected.length ? `<div class="card"><h3>被拒绝的类目</h3>
+      <div class="desc">服务端二次校验拦下的，就算绕过界面直接调接口也会被拒</div>
+      <table><thead><tr><th>类目</th><th>原因</th></tr></thead><tbody>
+      ${rejected.map(x => `<tr><td>${esc(x.name||x.id)}</td>
+        <td style="color:var(--amber)">${esc(x.reason)}</td></tr>`).join('')}
+      </tbody></table></div>` : ''}
+    ${p.byCat.map(c => `<div class="card" style="padding:12px 16px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-weight:500">${esc(c.name)}</span>${tierChip(c.tier)}
+        <div class="grow"></div>
+        <span style="font-variant-numeric:tabular-nums">${c.count.toLocaleString()} 个 · ${fmt(c.bytes)}</span>
+      </div>${c.blockedCount?`<div class="note">另有 ${c.blockedCount} 个被白名单拦截</div>`:''}</div>`).join('')}
+    ${p.blockedCount ? `<div class="card"><h3>被拦截的路径</h3>
+      <div class="desc">这些路径命中白名单或分层限制，即使勾选也不会被清理</div>
+      <table><thead><tr><th>路径</th><th style="text-align:right">大小</th><th>原因</th></tr></thead><tbody>
+      ${p.blocked.slice(0,30).map(b => `<tr><td class="mono">${esc(b.path)}</td>
+        <td class="num">${fmt(b.size)}</td><td style="font-size:12px;color:var(--amber)">${esc(b.reason)}</td></tr>`).join('')}
+      </tbody></table></div>` : ''}
+    <div class="card"><h3>清单明细（前 ${p.items.length} 条）</h3>
+      <table><thead><tr><th>路径</th><th style="text-align:right">大小</th>
+        <th>类目</th><th>依据</th></tr></thead><tbody>
+      ${p.items.map(i => `<tr><td class="mono">${esc(i.path)}</td>
+        <td class="num">${fmt(i.size)}</td>
+        <td style="font-size:12px;color:var(--t2)">${esc(i.catName)}</td>
+        <td style="font-size:11.5px;color:var(--t3);font-family:Consolas,monospace">${esc(i.why||'')}</td></tr>`).join('')}
+      </tbody></table>
+      ${p.truncated?`<div class="note" style="margin-top:8px">仅展示前 ${p.items.length} 条，实际执行会覆盖全部 ${p.totalCount.toLocaleString()} 个文件</div>`:''}
+    </div>`;
+}
+
+$('btnPlan').onclick = async () => {
+  if (!state.reportId) return;
+  const btn = $('btnPlan'); const old = btn.textContent;
+  btn.disabled = true; btn.textContent = '生成中…';
+  try{
+    const d = await post('/api/plan', {reportId: state.reportId, categories: [...state.selected]});
+    state.plan = d; renderPlanPane();
+    document.querySelector('.tab[data-pane="plan"]').click();
+    toast(`清单已生成：${d.totalCount} 个文件，${fmt(d.totalBytes)}`);
+  }catch(e){
+    const pl = e.payload || {};
+    if (pl.oversize){
+      $('modal').innerHTML = `<h3>清单超过单次上限</h3>
+        <div style="font-size:13px;color:var(--t2);line-height:1.9;margin:12px 0">
+          本次选中 ${fmt(pl.totalBytes)}，超过上限 ${fmt(pl.maxBytes)}。<br>
+          建议分阶段执行：先做阶段一（零风险），观察一天再做后面的。
+        </div>
+        <div class="acts">
+          <button onclick="closeModal()">返回调整</button>
+          <button class="danger" onclick="planForce()">我知道风险，强制生成</button>
+        </div>`;
+      $('overlay').classList.add('show');
+    } else if (pl.rejected) {
+      $('modal').innerHTML = `<h3>没有可清理的文件</h3>
+        <div class="note" style="margin:10px 0">${esc(e.message)}</div>
+        <table><thead><tr><th>类目</th><th>原因</th></tr></thead><tbody>
+        ${pl.rejected.map(x=>`<tr><td>${esc(x.name||x.id)}</td><td style="color:var(--amber)">${esc(x.reason)}</td></tr>`).join('')}
+        </tbody></table>
+        <div class="acts"><button class="primary" onclick="closeModal()">知道了</button></div>`;
+      $('overlay').classList.add('show');
+    } else {
+      toast('生成失败：' + e.message);
+    }
+  }
+  btn.disabled = false; btn.textContent = old;
+};
+
+window.planForce = async () => {
+  closeModal();
+  try{
+    const d = await post('/api/plan', {reportId: state.reportId, categories: [...state.selected], force: true});
+    state.plan = d; renderPlanPane();
+    document.querySelector('.tab[data-pane="plan"]').click();
+    toast('已生成超大清单，请仔细核对');
+  }catch(e){ toast('生成失败：' + e.message); }
+};
+
+window.doDryRun = async () => {
+  if (!state.plan) return;
+  showScan('正在试运行');
+  try{
+    const d = await post('/api/clean', {planId: state.plan.planId, mode:'dryrun'});
+    closeModal();
+    $('modal').innerHTML = `<h3>试运行完成</h3>
+      <div class="desc" style="font-size:13px;color:var(--t2);margin:8px 0 14px">没有移动任何文件，下面是真正执行时的效果</div>
+      <div class="grid3">
+        <div class="metric"><div class="lbl">可释放</div><div class="val" style="color:var(--green)">${fmt(d.freed)}</div></div>
+        <div class="metric"><div class="lbl">可清理文件</div><div class="val">${(d.total-d.skippedGone-d.skippedInUse).toLocaleString()}</div></div>
+        <div class="metric"><div class="lbl">会被跳过</div><div class="val" style="color:var(--amber)">${d.skippedGone+d.skippedInUse}</div>
+          <div class="hint">占用 ${d.skippedInUse} · 已消失 ${d.skippedGone}</div></div>
+      </div>
+      <div style="margin-top:14px">
+      ${d.byCat.map(c => `<div style="display:flex;justify-content:space-between;font-size:12.5px;
+        padding:6px 0;border-bottom:1px solid #F2F4F6"><span>${esc(c.name)}</span>
+        <span>${c.count} 个 · ${fmt(c.bytes)}</span></div>`).join('')}
+      </div>
+      <div class="acts"><button class="primary" onclick="closeModal()">知道了</button></div>`;
+    $('overlay').classList.add('show');
+  }catch(e){
+    closeModal();
+    $('modal').innerHTML = `<h3>试运行失败</h3>
+      <div style="color:var(--red);font-size:13px">${esc(e.message)}</div>
+      <div class="acts"><button class="primary" onclick="closeModal()">知道了</button></div>`;
+    $('overlay').classList.add('show');
+  }
+};
+
+window.doMove = async () => {
+  const p = state.plan; if (!p) return;
+  $('modal').innerHTML = `<h3>确认执行移动？</h3>
+    <div style="font-size:13px;color:var(--t2);line-height:1.9;margin:12px 0">
+      将把 <b>${p.totalCount.toLocaleString()}</b> 个文件（<b>${fmt(p.totalBytes)}</b>）移动到：<br>
+      <span class="mono" style="display:block;background:#F6F7F9;padding:8px 10px;border-radius:8px;margin-top:8px">${esc(p.backupRoot)}</span>
+      <br>这是移动而不是删除，可以按 _还原.ps1 原样搬回。执行时还会再校验一次白名单、分层与进程占用。
+    </div>
+    <div class="acts">
+      <button onclick="closeModal()">取消</button>
+      <button class="danger" id="confirmMove">确认移动</button>
+    </div>`;
+  $('confirmMove').onclick = async () => {
+    closeModal(); showScan('正在移动文件');
+    try{
+      const d = await post('/api/clean', {planId: p.planId, mode:'move', confirm:true});
+      closeModal();
+      $('modal').innerHTML = `<h3>移动完成</h3>
+        <div style="font-size:30px;font-weight:600;color:var(--green);margin:14px 0 4px">+${fmt(d.freed)}</div>
+        <div style="font-size:13px;color:var(--t2)">
+          成功移动 ${d.moved.toLocaleString()} 个，失败 ${d.failed} 个<br>
+          当前可用 ${fmt(d.freeAfter)}
+        </div>
+        <div class="mono" style="background:#F6F7F9;padding:8px 10px;border-radius:8px;margin:14px 0">${esc(d.backup)}</div>
+        ${d.procSkipped && d.procSkipped.length ? `<div style="font-size:12px;color:var(--amber)">
+          ${d.procSkipped.map(x=>`类目 ${esc(x.cat)} 因${esc(x.reason)}整体跳过`).join('<br>')}</div>`:''}
+        ${d.failed ? `<div style="font-size:12px;color:var(--red);max-height:120px;overflow:auto;margin-top:8px">
+          ${d.failedList.slice(0,8).map(f=>`${esc(f.path)}　${esc(f.reason)}`).join('<br>')}</div>` : ''}
+        <div class="note" style="margin-top:10px">建议先用一周确认各软件正常，再删 D 盘备份</div>
+        <div class="acts">
+          <button onclick="openPath('${esc(d.backup).replace(/\\/g,'\\\\')}')">打开备份目录</button>
+          <button class="primary" onclick="closeModal();$('btnScan').click()">重新扫描</button>
+        </div>`;
+      $('overlay').classList.add('show');
+    }catch(e){
+      closeModal();
+      $('modal').innerHTML = `<h3>执行失败</h3>
+        <div style="color:var(--red);font-size:13px">${esc(e.message)}</div>
+        <div class="acts"><button class="primary" onclick="closeModal()">知道了</button></div>`;
+      $('overlay').classList.add('show');
+    }
+  };
+  $('overlay').classList.add('show');
+};
+
+window.openPath = async (p) => {
+  await fetch('/api/open', {method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({path:p})});
+};
+
+async function renderStrategy(){
+  let d = state.strategy;
+  if (!d){ try { d = await api('/api/strategy'); state.strategy = d; } catch(e){ return; } }
+  const reqTxt = r => {
+    const p = [];
+    if (r.requires.minAgeHours != null) p.push('最后活动 ≥ ' + r.requires.minAgeHours + ' 小时');
+    if (r.requires.minAgeDays != null) p.push('最后活动 ≥ ' + r.requires.minAgeDays + ' 天');
+    if (r.requires.noProcess) p.push('进程 ' + r.requires.noProcess.join('/') + ' 未运行');
+    return p.length ? p.join(' 且 ') : '无前置条件';
+  };
+  $('pane-strategy').innerHTML = `
+    <div class="card">
+      <h3>判定总纲</h3>
+      <div class="desc" style="margin-bottom:8px">唯一可靠的清理依据是可再生性，不是目录名、不是文件年龄、不是体积</div>
+      <div class="note">
+        ① 删了之后软件或网络能不能再生成一份一样的？　② 重新生成要付什么代价？　③ 它是不是某份数据的唯一副本？<br>
+        只要 ③ 的答案是「是」，无论多大、多久没动，都不进清理清单。
+      </div>
+    </div>
+    <div class="card">
+      <h3>四层分级</h3>
+      <table><thead><tr><th style="width:150px">层</th><th>定义</th><th>允许动作</th></tr></thead><tbody>
+        ${d.tierOrder.map(t => `<tr><td>${tierChip(t)} <span style="font-size:12.5px">${esc(d.tiers[t].label)}</span></td>
+          <td class="note">${esc(d.tiers[t].desc)}</td>
+          <td class="note">${t==='L1'?'可直接清理':t==='L2'?'条件清理，逐项确认':t==='L3'?'只迁移到其他盘':'仅报告'}</td></tr>`).join('')}
+      </tbody></table>
+    </div>
+    <div class="card">
+      <h3>规则清单</h3>
+      <div class="desc">共 ${d.rules.length} 条，按优先级从上到下评估；先命中的生效。规则直接决定分层与是否可清理</div>
+      <table><thead><tr><th>规则</th><th style="width:92px">分层</th><th>前置条件</th><th style="width:70px">可清理</th></tr></thead><tbody>
+      ${d.rules.map(r => `<tr>
+        <td><div style="font-weight:500">${esc(r.name)}</div>
+          <div class="note" style="font-family:Consolas,monospace">${esc(r.id)}</div></td>
+        <td>${tierChip(r.tier)}</td>
+        <td class="note">${esc(reqTxt(r))}</td>
+        <td>${r.selectable?'<span class="chip safe">可</span>':'<span class="chip lock">否</span>'}</td>
+      </tr>`).join('')}
+      </tbody></table>
+    </div>
+    <div class="card">
+      <h3>为什么不做这些事</h3>
+      <div class="note">
+        · <b>不自动删重复文件</b>：哪份该留取决于内容，工具只给保留建议<br>
+        · <b>不把长期未用算进可释放</b>：年龄不等于可再生，只作线索<br>
+        · <b>不碰 WinSxS / DriverStore / Installer</b>：只能走 DISM 与 pnputil，手删会破坏系统<br>
+        · <b>不碰浏览器 Local Storage / IndexedDB / Cookies</b>：删了会全站掉登录<br>
+        · <b>不做注册表清理</b>：收益极低、风险极高
+      </div>
+    </div>`;
+}
+
+init();
+</script>
+</body>
+</html>

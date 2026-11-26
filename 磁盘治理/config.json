@@ -1,0 +1,490 @@
+{
+  "version": 2,
+  "scope": "C:\\",
+  "backupRoot": "D:\\磁盘治理备份",
+  "thresholds": {
+    "tempAgeHours": 72,
+    "dumpAgeHours": 168,
+    "cacheAgeHours": 168,
+    "logAgeHours": 168,
+    "buildAgeHours": 168,
+    "ideAgeHours": 24,
+    "installerAgeDays": 90,
+    "staleDays": 365,
+    "bigFileMB": 500,
+    "dupMinMB": 1,
+    "dupMaxGroupSize": 12,
+    "similarMinCount": 3,
+    "similarMinMB": 20,
+    "maxFiles": 1500000,
+    "maxPlanBytes": 21474836480
+  },
+  "skipDirs": [
+    "$Recycle.Bin",
+    "System Volume Information",
+    "$WinREAgent",
+    "Config.Msi",
+    "Recovery",
+    "$SysReset"
+  ],
+  "whitelist": [
+    "**\\Windows\\System32\\**",
+    "**\\Windows\\SysWOW64\\**",
+    "**\\Windows\\WinSxS\\**",
+    "**\\Windows\\Installer\\**",
+    "**\\Windows\\servicing\\**",
+    "**\\Windows\\assembly\\**",
+    "**\\Windows\\Boot\\**",
+    "**\\Windows\\Fonts\\**",
+    "**\\DriverStore\\**",
+    "**\\Program Files\\**",
+    "**\\Program Files (x86)\\**",
+    "**\\WindowsApps\\**",
+    "**\\ProgramData\\Microsoft\\**",
+    "**\\ProgramData\\Package Cache\\**",
+    "**\\.ssh\\**",
+    "**\\.gnupg\\**",
+    "**\\.aws\\**",
+    "**\\.kube\\**",
+    "**\\.workbuddy\\**",
+    "**\\Documents\\**",
+    "**\\Desktop\\**",
+    "**\\Pictures\\**",
+    "**\\Videos\\**"
+  ],
+  "exclude": [
+    "**\\node_modules\\.cache\\**",
+    "**\\$Recycle.Bin\\**",
+    "**\\Windows\\Prefetch\\**"
+  ],
+  "disabledRules": [],
+  "rules": [
+    {
+      "id": "sys_core",
+      "name": "系统核心与组件库",
+      "tier": "L0",
+      "kind": "deny",
+      "scope": "system",
+      "match": {
+        "pathAny": [
+          "windows/winsxs",
+          "windows/system32",
+          "windows/syswow64",
+          "windows/installer",
+          "windows/servicing",
+          "windows/assembly",
+          "windows/boot",
+          "windows/fonts"
+        ],
+        "notPathAny": ["/driverstore/"]
+      },
+      "basis": "位于 Windows 组件库、System32、安装器数据库或服务栈目录，由 TrustedInstaller 保护",
+      "advice": "禁止文件级删除。要回收 WinSxS 只能 Dism /Online /Cleanup-Image /StartComponentCleanup；Installer 手删会导致程序无法卸载或修复失败"
+    },
+    {
+      "id": "driver_store",
+      "name": "驱动仓库 DriverStore",
+      "tier": "L0",
+      "kind": "deny",
+      "match": { "pathAny": ["/driverstore/"] },
+      "basis": "存放所有已安装驱动的受保护副本，由系统按设备引用计数管理",
+      "advice": "禁止手删。只有同一设备存在 3 个以上版本时，才用 pnputil /delete-driver oemXX.inf /uninstall 删最旧的一份"
+    },
+    {
+      "id": "program_files",
+      "name": "已安装程序目录",
+      "tier": "L0",
+      "kind": "deny",
+      "match": {
+        "pathAny": ["/program files/", "/program files (x86)/", "/windowsapps/"]
+      },
+      "basis": "程序本体与商店应用安装目录，删除会直接破坏软件",
+      "advice": "只能通过「设置 → 应用 → 卸载/重置」或应用商店处理，不要动文件系统"
+    },
+    {
+      "id": "browser_profile_data",
+      "name": "浏览器账号与站点数据",
+      "tier": "L0",
+      "kind": "deny",
+      "match": {
+        "any": [
+          {
+            "pathAll": ["/user data/"],
+            "segAny": [
+              "local storage",
+              "indexeddb",
+              "session storage",
+              "extensions",
+              "sync extensions",
+              "extension state"
+            ]
+          },
+          { "pathAny": ["/service worker/scriptcache/", "/service worker/database/"] },
+          {
+            "pathAll": ["/user data/"],
+            "nameRegex": "^(login data|login data for account|web data|bookmarks|preferences|secure preferences|history|history-journal|cookies|cookies-journal|local state|shortcuts|top sites|favicons)$"
+          },
+          {
+            "pathAll": ["/mozilla/firefox/"],
+            "nameRegex": "^(cookies\\.sqlite|logins\\.json|places\\.sqlite|key4\\.db|prefs\\.js|cert9\\.db)$"
+          }
+        ]
+      },
+      "basis": "保存的密码、书签、Cookie、自动填充与站点本地数据（Local Storage / IndexedDB 里存着绝大多数网站的登录态）",
+      "advice": "永不清理。删了会掉登录、丢密码、丢书签。浏览器内「清除浏览数据」也不要勾这几项"
+    },
+    {
+      "id": "vs_package_cache",
+      "name": "VS/安装器包缓存",
+      "tier": "L0",
+      "kind": "deny",
+      "match": { "pathAny": ["/programdata/package cache/"] },
+      "basis": "Visual Studio 等大型安装器的离线包缓存，卸载与修复都依赖它",
+      "advice": "不要删。删了会导致 VS 无法修复、无法卸载、无法离线安装组件"
+    },
+    {
+      "id": "sys_config",
+      "name": "系统级配置",
+      "tier": "L0",
+      "kind": "deny",
+      "match": { "pathAny": ["/programdata/microsoft/"] },
+      "basis": "系统组件在 ProgramData 下的配置与状态数据",
+      "advice": "不清理。个别子目录（如 Defender 定义缓存）由系统自行回收"
+    },
+    {
+      "id": "key_secret",
+      "name": "密钥与凭据",
+      "tier": "L0",
+      "kind": "deny",
+      "match": { "pathAny": ["/.ssh/", "/.gnupg/", "/.aws/", "/.kube/"] },
+      "basis": "SSH 私钥、GPG 密钥环、云平台凭据",
+      "advice": "永不清理。删了无法恢复，相关服务会全部失效"
+    },
+    {
+      "id": "tool_data",
+      "name": "工具与项目数据",
+      "tier": "L0",
+      "kind": "deny",
+      "match": { "pathAny": ["/.workbuddy/", "/workbuddy/"] },
+      "basis": "AI 工具的运行数据、项目工作区与会话记录",
+      "advice": "不是缓存，不要清理"
+    },
+    {
+      "id": "old_installers",
+      "name": "下载目录里的旧安装包",
+      "tier": "L2",
+      "kind": "clean",
+      "regenerable": false,
+      "match": {
+        "pathAny": ["/downloads/"],
+        "ext": [".exe", ".msi", ".msix", ".iso", ".img", ".dmg"]
+      },
+      "requires": { "minAgeDays": "@installerAgeDays" },
+      "basis": "位于下载目录、超过 90 天未改动的安装包与镜像",
+      "advice": "建议移到 D:\\归档\\安装包 而不是删除。有些是离线安装备份，删了要重新下载；压缩包与文档不在此规则内"
+    },
+    {
+      "id": "user_docs",
+      "name": "个人文档与桌面",
+      "tier": "L3",
+      "kind": "migrate",
+      "match": {
+        "pathAny": ["/documents/", "/desktop/", "/pictures/", "/videos/", "/music/", "/downloads/"]
+      },
+      "basis": "用户自己产生的内容，是可再生的反面：删了就没有第二份",
+      "advice": "只迁移不删除。右键文件夹 → 属性 → 位置 → 移动到 D 盘，不要用剪切"
+    },
+    {
+      "id": "wechat_files",
+      "name": "微信聊天文件",
+      "tier": "L3",
+      "kind": "migrate",
+      "match": { "pathAny": ["/xwechat/files/", "/xwechat/msg/", "/wechat files/"] },
+      "basis": "聊天里收到的文件、图片、语音，属于唯一副本",
+      "advice": "只迁移。用微信「设置 → 文件管理 → 更改存储位置」整体搬到 D 盘，不要在资源管理器里手搬"
+    },
+    {
+      "id": "win_update",
+      "name": "Windows 更新下载缓存",
+      "tier": "L1",
+      "kind": "clean",
+      "regenerable": true,
+      "match": {
+        "pathAny": [
+          "/softwaredistribution/download/",
+          "/softwaredistribution/deliveryoptimization/"
+        ]
+      },
+      "requires": { "minAgeHours": 24 },
+      "basis": "已下载并安装完成的更新包，系统不再引用",
+      "advice": "可清理。若正在装更新，服务会重新下载；未完成的更新不会受影响"
+    },
+    {
+      "id": "app_crash_dumps",
+      "name": "应用崩溃转储",
+      "tier": "L1",
+      "kind": "clean",
+      "regenerable": true,
+      "match": { "pathAny": ["/crashdumps/"] },
+      "requires": { "minAgeHours": "@dumpAgeHours" },
+      "basis": "单个应用崩溃时生成的进程内存转储",
+      "advice": "可清理。崩溃已过去一周以上就没有排查价值"
+    },
+    {
+      "id": "kernel_dump",
+      "name": "内核与蓝屏转储",
+      "tier": "L1",
+      "kind": "clean",
+      "regenerable": true,
+      "match": {
+        "any": [
+          { "pathAny": ["/livekernelreports/", "/minidump/", "/memory.dmp"] },
+          { "ext": [".dmp", ".mdmp", ".hdmp"] }
+        ],
+        "notPathAny": ["/crashdumps/"]
+      },
+      "requires": { "minAgeHours": 24 },
+      "basis": "崩溃时的内存快照，含完整物理内存，单文件常达数百 MB 到数 GB",
+      "advice": "可清理。仅当正在排查蓝屏或送修分析时需要保留；清掉后无法再分析该次崩溃"
+    },
+    {
+      "id": "updater",
+      "name": "应用更新器安装包",
+      "tier": "L1",
+      "kind": "clean",
+      "regenerable": true,
+      "match": {
+        "segEndsWith": ["-updater"],
+        "ext": [".exe", ".msi", ".msix", ".nupkg", ".7z", ".zip"]
+      },
+      "requires": { "minAgeHours": 24 },
+      "basis": "Electron 系应用自动更新时下载的完整安装包，安装完成后即废弃，且每次更新都会再留一份",
+      "advice": "可清理，是收益/风险比最高的一项。下次检查更新会重新下载"
+    },
+    {
+      "id": "sodamusic_cache",
+      "name": "汽水音乐音频缓存",
+      "tier": "L1",
+      "kind": "clean",
+      "regenerable": true,
+      "match": { "pathAny": ["/sodamusic/lunacachev2", "/sodamusic/cache"] },
+      "requires": { "noProcess": ["sodamusic.exe"] },
+      "basis": "在线播放时缓存的加密音频分片，重听会自动重新拉取",
+      "advice": "可清理，通常是本机最大单笔。优先在客户端「设置 → 清理缓存」点一次，比手删更稳；已下载到本地的歌曲不在此目录"
+    },
+    {
+      "id": "wechat_cache",
+      "name": "微信缓存与日志",
+      "tier": "L1",
+      "kind": "clean",
+      "regenerable": true,
+      "match": {
+        "pathAny": ["/xwechat/", "/tencent/wechat/"],
+        "segAny": ["cache", "log", "logs", "temp", "crash"]
+      },
+      "requires": { "noProcess": ["wechat.exe", "weixin.exe"] },
+      "basis": "聊天界面的图片缩略图、视频预览、运行日志，与聊天文件分处不同子目录",
+      "advice": "可清理，但务必只在客户端退出后做。聊天记录与收到的文件在 FileStorage/msg 下，已单独标为 L3 禁删"
+    },
+    {
+      "id": "browser_cache",
+      "name": "浏览器渲染与网络缓存",
+      "tier": "L1",
+      "kind": "clean",
+      "regenerable": true,
+      "match": {
+        "pathAny": ["/user data/", "/mozilla/firefox/", "/google/chrome/", "/microsoft/edge/"],
+        "segAny": [
+          "cache",
+          "cache2",
+          "code cache",
+          "gpucache",
+          "shadercache",
+          "cachestorage",
+          "cache_data",
+          "component_crx_cache",
+          "grshadercache"
+        ]
+      },
+      "requires": { "noProcess": ["chrome.exe", "msedge.exe", "firefox.exe", "brave.exe"] },
+      "basis": "只命中 Cache / Code Cache / GPUCache / ShaderCache / CacheStorage 这些纯渲染与网络缓存目录",
+      "advice": "可清理。不涉及密码、书签、Cookie 与站点登录态，那些已被上一条 L0 规则挡住"
+    },
+    {
+      "id": "vscode_cache",
+      "name": "VS Code 缓存",
+      "tier": "L1",
+      "kind": "clean",
+      "regenerable": true,
+      "match": {
+        "pathAny": ["/code/cache", "/code/cacheddata", "/code/cachedextensionvsixs", "/code/gpucache"]
+      },
+      "requires": { "noProcess": ["code.exe"] },
+      "basis": "编辑器扩展宿主与语法高亮的预编译缓存",
+      "advice": "可清理。下次打开会重建，首次启动稍慢。扩展配置与设置不在这些目录"
+    },
+    {
+      "id": "ide_cache",
+      "name": "JetBrains 索引与缓存",
+      "tier": "L2",
+      "kind": "clean",
+      "regenerable": true,
+      "match": {
+        "pathAny": ["/jetbrains/"],
+        "segAny": ["caches", "index", "log", "logs", "tmp"]
+      },
+      "requires": {
+        "minAgeHours": "@ideAgeHours",
+        "noProcess": [
+          "idea64.exe", "pycharm64.exe", "webstorm64.exe",
+          "goland64.exe", "clion64.exe", "rider64.exe", "studio64.exe"
+        ]
+      },
+      "basis": "IDE 的项目索引、本地历史与日志，由 IDE 自动生成；config/plugins/options 不在此范围",
+      "advice": "先关闭 IDE 再清。下次打开会重建索引，大型项目可能慢 5–20 分钟。必须保留 config、plugins、options 三个子目录"
+    },
+    {
+      "id": "pkg_cache",
+      "name": "包管理器下载缓存",
+      "tier": "L1",
+      "kind": "clean",
+      "regenerable": true,
+      "match": {
+        "pathAny": [
+          "/npm-cache/", "/npm_cache/", "/.npm/", "/pip/cache/",
+          "/yarn/cache/", "/pnpm/store/", "/pnpm-cache/",
+          "/.gradle/caches/", "/.m2/repository/", "/.nuget/packages/",
+          "/.cargo/registry/", "/go/pkg/mod/", "/node-gyp/"
+        ]
+      },
+      "requires": {
+        "minAgeHours": 24,
+        "noProcess": ["node.exe", "java.exe", "python.exe"]
+      },
+      "basis": "包管理器把下载过的依赖包留在本地供复用，属于纯缓存",
+      "advice": "可清理。首次重新装依赖或构建会联网重下，可能慢 10–60 分钟，功能不受影响"
+    },
+    {
+      "id": "thumbcache",
+      "name": "缩略图与图标缓存",
+      "tier": "L1",
+      "kind": "clean",
+      "regenerable": true,
+      "match": { "pathAny": ["/explorer/thumbcache_", "/explorer/iconcache_"] },
+      "basis": "资源管理器为图片、视频生成的小图索引数据库",
+      "advice": "可清理。重启资源管理器后自动重建，首次浏览文件夹缩略图出现会慢一点"
+    },
+    {
+      "id": "inetcache",
+      "name": "系统组件网络缓存",
+      "tier": "L1",
+      "kind": "clean",
+      "regenerable": true,
+      "match": { "pathAny": ["/inetcache/"] },
+      "basis": "IE 内核与部分系统组件共用的网页缓存",
+      "advice": "可清理，无副作用"
+    },
+    {
+      "id": "electron_cache",
+      "name": "Electron 应用渲染缓存",
+      "tier": "L1",
+      "kind": "clean",
+      "regenerable": true,
+      "match": {
+        "pathAny": ["/appdata/roaming/", "/appdata/local/"],
+        "segAny": ["cache", "gpucache", "code cache", "cachestorage", "localcache"],
+        "notPathAny": [
+          "/jetbrains/",
+          "/local storage/",
+          "/indexeddb/",
+          "/session storage/",
+          "/blob_storage/"
+        ]
+      },
+      "requires": { "minAgeHours": 24 },
+      "basis": "Electron/CEF 应用的 Chromium 渲染缓存与 GPU 缓存，位于 AppData 下",
+      "advice": "可清理，建议先退出对应应用。若某应用清完出现界面异常，重开一次即可自愈"
+    },
+    {
+      "id": "temp",
+      "name": "临时文件（超过 72 小时）",
+      "tier": "L1",
+      "kind": "clean",
+      "regenerable": true,
+      "match": {
+        "any": [
+          { "pathAny": ["/appdata/local/temp/", "/windows/temp/", "/appdata/roaming/temp/"] },
+          { "ext": [".tmp", ".temp", ".part", ".crdownload", ".download", "._mp"] }
+        ]
+      },
+      "requires": { "minAgeHours": "@tempAgeHours" },
+      "basis": "位于系统或用户的 Temp 目录，或使用临时扩展名，且最后活动已超过 72 小时",
+      "advice": "可清理。时间窗设为 72 小时而不是「今天之前」，避免动到当天仍在被引用的文件；被进程占用的会自动跳过"
+    },
+    {
+      "id": "temp_recent",
+      "name": "临时文件（72 小时内，本轮不清）",
+      "tier": "L2",
+      "kind": "hold",
+      "selectable": false,
+      "regenerable": true,
+      "match": {
+        "any": [
+          { "pathAny": ["/appdata/local/temp/", "/windows/temp/", "/appdata/roaming/temp/"] },
+          { "ext": [".tmp", ".temp", ".part", ".crdownload", ".download", "._mp"] }
+        ]
+      },
+      "basis": "同样在临时位置，但最后活动在 72 小时内，可能仍被运行中的程序引用",
+      "advice": "本轮不清理。仅用于让你看到「还有多少是热的」，隔一天再扫就会转入可清项"
+    },
+    {
+      "id": "build_output",
+      "name": "构建产物与依赖目录",
+      "tier": "L2",
+      "kind": "clean",
+      "regenerable": true,
+      "match": {
+        "segAny": [
+          "node_modules", "__pycache__", ".venv", ".next", ".nuxt",
+          ".turbo", ".parcel-cache", "coverage", "target"
+        ]
+      },
+      "requires": { "minAgeHours": "@buildAgeHours" },
+      "basis": "项目里可重新生成的依赖与编译产物，且超过 7 天未被改动",
+      "advice": "可以清，但该项目下次 npm install / 编译要重来。只在你确认项目近期不用再动时清；正在开发的项目会因命中 7 天规则而自动排除"
+    },
+    {
+      "id": "logs",
+      "name": "日志文件（超过 7 天）",
+      "tier": "L2",
+      "kind": "clean",
+      "regenerable": true,
+      "match": {
+        "any": [
+          { "ext": [".log", ".xlog", ".etl", ".log1", ".log2"] },
+          { "segAny": ["logs"] }
+        ]
+      },
+      "requires": { "minAgeHours": "@logAgeHours" },
+      "basis": "扩展名为 log/etl，或位于 logs 目录，且超过 7 天未改动",
+      "advice": "一般可清。若近期在排查某个软件的问题，先保留最近 7 天的（本规则已自动留出这个窗口）"
+    },
+    {
+      "id": "cache_generic",
+      "name": "其他应用缓存目录",
+      "tier": "L2",
+      "kind": "clean",
+      "regenerable": true,
+      "match": {
+        "segAny": ["cache", "caches"],
+        "notPathAny": [
+          "/local storage/", "/indexeddb/", "/session storage/",
+          "/blob_storage/", "/login data/", "/user data/"
+        ]
+      },
+      "requires": { "minAgeHours": "@cacheAgeHours" },
+      "basis": "路径中含 Cache/Caches 目录，但未匹配到已知应用的明确规则，且超过 7 天未改动",
+      "advice": "逐个确认再清。少数应用会把本地草稿或未同步的数据放在 cache 目录，界面里给了完整路径供你判断"
+    }
+  ]
+}

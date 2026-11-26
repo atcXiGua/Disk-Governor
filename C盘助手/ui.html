@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>C盘助手</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  :root{
+    --bg:#F4F5F7; --card:#FFFFFF; --line:#E6E8EC; --line2:#D8DBE1;
+    --t1:#1B1F24; --t2:#5B6169; --t3:#8A9099;
+    --blue:#2F6FEB; --blue-bg:#EAF1FE;
+    --green:#1E7A46; --green-bg:#E8F6EE;
+    --amber:#9A6A10; --amber-bg:#FDF4E3;
+    --red:#C0392B; --red-bg:#FBEAE8;
+    --shadow:0 1px 2px rgba(20,24,30,.04),0 8px 24px rgba(20,24,30,.05);
+  }
+  body{
+    font-family:"Segoe UI","Microsoft YaHei UI","Microsoft YaHei",system-ui,sans-serif;
+    background:var(--bg);color:var(--t1);font-size:14px;line-height:1.6;
+    -webkit-font-smoothing:antialiased;padding-bottom:96px;
+  }
+  .wrap{max-width:940px;margin:0 auto;padding:0 20px}
+  header{padding:28px 0 20px;display:flex;align-items:flex-start;gap:14px}
+  .logo{
+    width:42px;height:42px;border-radius:12px;background:linear-gradient(135deg,#2F6FEB,#5B8DF5);
+    display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  }
+  .logo svg{width:22px;height:22px}
+  h1{font-size:19px;font-weight:600;letter-spacing:.2px}
+  .sub{font-size:12.5px;color:var(--t2);margin-top:2px}
+  .grow{flex:1}
+  button{font-family:inherit;font-size:13px;cursor:pointer;border-radius:9px;border:1px solid var(--line2);
+    background:#fff;color:var(--t1);padding:8px 14px;transition:.15s;white-space:nowrap}
+  button:hover{border-color:#B9BEC7;background:#FAFBFC}
+  button:active{transform:translateY(1px)}
+  button:disabled{opacity:.5;cursor:not-allowed;transform:none}
+  button.primary{background:var(--blue);border-color:var(--blue);color:#fff;font-weight:500}
+  button.primary:hover{background:#245ECB;border-color:#245ECB}
+  button.ghost{background:transparent;border-color:transparent;color:var(--t2);padding:8px 10px}
+  button.ghost:hover{background:#EDEFF3;color:var(--t1)}
+
+  .disks{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:22px}
+  .disk{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px;box-shadow:var(--shadow)}
+  .disk-head{display:flex;align-items:baseline;gap:8px;margin-bottom:10px}
+  .disk-name{font-size:14px;font-weight:600}
+  .disk-tag{font-size:11.5px;color:var(--t3)}
+  .disk-num{display:flex;align-items:baseline;gap:6px;margin-bottom:12px}
+  .disk-free{font-size:26px;font-weight:600;letter-spacing:-.5px}
+  .disk-unit{font-size:13px;color:var(--t2)}
+  .disk-total{font-size:12px;color:var(--t3);margin-left:auto}
+  .bar{height:6px;border-radius:99px;background:#EDEFF2;overflow:hidden}
+  .bar i{display:block;height:100%;border-radius:99px;transition:width .5s ease}
+  .bar.ok i{background:#3FA46A}
+  .bar.warn i{background:#E0A030}
+  .bar.danger i{background:#D9534F}
+  .disk-foot{font-size:11.5px;color:var(--t3);margin-top:8px;display:flex;justify-content:space-between}
+
+  .section-head{display:flex;align-items:center;gap:10px;margin:0 0 12px}
+  .section-head h2{font-size:14.5px;font-weight:600}
+  .section-head .hint{font-size:12px;color:var(--t3)}
+
+  .list{background:var(--card);border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:var(--shadow)}
+  .row{display:flex;align-items:flex-start;gap:13px;padding:14px 18px;border-bottom:1px solid var(--line);transition:background .12s}
+  .row:last-child{border-bottom:none}
+  .row:hover{background:#FBFCFD}
+  .row.sel{background:#F5F8FE}
+  .row.disabled{opacity:.55}
+  input[type=checkbox]{
+    appearance:none;-webkit-appearance:none;width:17px;height:17px;border:1.5px solid #C3C8D1;
+    border-radius:5px;margin-top:3px;flex-shrink:0;cursor:pointer;position:relative;transition:.15s;background:#fff;
+  }
+  input[type=checkbox]:hover{border-color:var(--blue)}
+  input[type=checkbox]:checked{background:var(--blue);border-color:var(--blue)}
+  input[type=checkbox]:checked::after{
+    content:"";position:absolute;left:4.5px;top:1.5px;width:5px;height:9px;
+    border:2px solid #fff;border-top:0;border-left:0;transform:rotate(42deg);
+  }
+  .row-main{flex:1;min-width:0}
+  .row-title{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .row-name{font-size:13.5px;font-weight:500}
+  .row-desc{font-size:12.5px;color:var(--t2);margin-top:3px}
+  .row-path{font-size:11.5px;color:var(--t3);margin-top:4px;font-family:Consolas,"Cascadia Mono",monospace;
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .row-right{text-align:right;flex-shrink:0;padding-top:1px;min-width:92px}
+  .size{font-size:14px;font-weight:600;font-variant-numeric:tabular-nums}
+  .cnt{font-size:11.5px;color:var(--t3);margin-top:2px}
+  .chip{display:inline-block;font-size:11px;padding:1px 7px;border-radius:6px;font-weight:500;line-height:1.7}
+  .chip.low{background:var(--green-bg);color:var(--green)}
+  .chip.mid{background:var(--amber-bg);color:var(--amber)}
+  .chip.admin{background:var(--blue-bg);color:#2255B8}
+  .chip.zero{background:#F0F1F4;color:var(--t3)}
+
+  .bar-bottom{
+    position:fixed;left:0;right:0;bottom:0;background:rgba(255,255,255,.92);
+    backdrop-filter:blur(12px);border-top:1px solid var(--line);z-index:20;
+  }
+  .bar-inner{max-width:940px;margin:0 auto;padding:13px 20px;display:flex;align-items:center;gap:14px}
+  .sum{font-size:13px;color:var(--t2)}
+  .sum b{color:var(--t1);font-size:15px;font-weight:600;font-variant-numeric:tabular-nums}
+  .sum .est{color:var(--blue);font-weight:600}
+
+  .note{margin-top:22px;background:#FBFBFC;border:1px solid var(--line);border-radius:12px;padding:14px 18px}
+  .note h3{font-size:12.5px;font-weight:600;color:var(--t2);margin-bottom:6px}
+  .note p{font-size:12.5px;color:var(--t2);line-height:1.75}
+  .note code{font-family:Consolas,monospace;font-size:11.5px;background:#EDEFF3;padding:1px 5px;border-radius:4px;color:#43484F}
+  .note b{color:var(--red);font-weight:500}
+
+  .hist-btn{margin:18px 0 0;display:flex;justify-content:center}
+  .hist{padding:0 18px 14px;display:none}
+  .hist.open{display:block}
+  .hist-item{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px dashed var(--line);font-size:12.5px}
+  .hist-item:last-child{border-bottom:none}
+  .hist-when{color:var(--t3);width:130px;flex-shrink:0;font-variant-numeric:tabular-nums}
+  .hist-freed{font-weight:600;color:var(--green);width:76px;flex-shrink:0}
+  .hist-meta{color:var(--t2);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+  .overlay{
+    position:fixed;inset:0;background:rgba(24,28,34,.42);display:none;
+    align-items:center;justify-content:center;z-index:50;padding:20px;
+  }
+  .overlay.show{display:flex}
+  .modal{background:#fff;border-radius:16px;padding:28px;max-width:400px;width:100%;text-align:center;
+    box-shadow:0 20px 60px rgba(16,20,28,.28);animation:pop .2s ease}
+  @keyframes pop{from{opacity:0;transform:scale(.96) translateY(8px)}to{opacity:1;transform:none}}
+  .modal h3{font-size:16px;font-weight:600;margin-bottom:6px}
+  .modal .big{font-size:34px;font-weight:600;color:var(--green);letter-spacing:-1px;margin:14px 0 4px;font-variant-numeric:tabular-nums}
+  .modal .small{font-size:12.5px;color:var(--t2);line-height:1.75}
+  .modal .path{font-size:11.5px;color:var(--t3);word-break:break-all;font-family:Consolas,monospace;
+    background:#F6F7F9;border-radius:8px;padding:8px 10px;margin:12px 0;text-align:left}
+  .modal .acts{display:flex;gap:10px;margin-top:18px}
+  .modal .acts button{flex:1}
+  .spin{width:34px;height:34px;border:3px solid #E3E7EE;border-top-color:var(--blue);border-radius:50%;
+    margin:4px auto 16px;animation:rot .8s linear infinite}
+  @keyframes rot{to{transform:rotate(360deg)}}
+  .toast{position:fixed;left:50%;transform:translateX(-50%) translateY(-16px);top:18px;
+    background:#252A31;color:#fff;font-size:13px;padding:9px 16px;border-radius:10px;opacity:0;
+    transition:.25s;z-index:60;pointer-events:none}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  @media(max-width:680px){.disks{grid-template-columns:1fr}.row-right{min-width:70px}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header>
+    <div class="logo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <ellipse cx="12" cy="6" rx="8" ry="3"/><path d="M4 6v6c0 1.7 3.6 3 8 3s8-1.3 8-3V6"/>
+        <path d="M4 12v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/>
+      </svg>
+    </div>
+    <div>
+      <h1>C盘助手</h1>
+      <div class="sub">本地可视化清理 · 只移动不删除 · 可随时还原</div>
+    </div>
+    <div class="grow"></div>
+    <button id="rescan" onclick="load(true)">重新扫描</button>
+  </header>
+
+  <div class="disks" id="disks"></div>
+
+  <div class="section-head">
+    <h2>可清理项目</h2>
+    <span class="hint" id="scanHint">正在扫描…</span>
+    <div class="grow"></div>
+    <button class="ghost" onclick="selectSafe()">只选安全项</button>
+  </div>
+
+  <div class="list" id="list">
+    <div class="row"><div class="row-main"><div class="row-desc" style="padding:14px 0">正在统计各目录体积，请稍候…</div></div></div>
+  </div>
+
+  <div class="note">
+    <h3>不建议动的地方</h3>
+    <p>
+      <code>C:\Windows\WinSxS</code>、<code>DriverStore</code>、<code>WindowsApps</code>、<code>Windows\Installer</code>、<code>System32</code>
+      —— 这些目录由系统 TrustedInstaller 保护，手动删除会导致更新失败、软件无法卸载甚至无法开机。
+      需要腾空间请用系统自带的「磁盘清理 → 清理系统文件」或管理员执行
+      <code>Dism /Online /Cleanup-Image /StartComponentCleanup</code>。
+      <b>WinSxS 显示的体积因硬链接去重会明显偏大，别按它估算。</b>
+    </p>
+  </div>
+
+  <div class="hist-btn"><button class="ghost" onclick="toggleHist()">查看清理记录</button></div>
+  <div class="list hist" id="histBox"></div>
+</div>
+
+<div class="bar-bottom">
+  <div class="bar-inner">
+    <div class="sum" id="sum">未选择任何项目</div>
+    <div class="grow"></div>
+    <button id="btnClean" class="primary" disabled onclick="doClean()">开始清理</button>
+  </div>
+</div>
+
+<div class="overlay" id="overlay"><div class="modal" id="modal"></div></div>
+<div class="toast" id="toast"></div>
+
+<script>
+const state = { groups: [], selected: new Set(), scanAt: '' };
+const $ = id => document.getElementById(id);
+
+function gb(bytes) { return (bytes / 1073741824).toFixed(2); }
+function human(bytes) {
+  if (bytes >= 1073741824) return (bytes / 1073741824).toFixed(2) + ' GB';
+  if (bytes >= 1048576) return (bytes / 1048576).toFixed(0) + ' MB';
+  if (bytes >= 1024) return (bytes / 1024).toFixed(0) + ' KB';
+  return bytes + ' B';
+}
+function toast(msg) {
+  const t = $('toast'); t.textContent = msg; t.classList.add('show');
+  clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), 2200);
+}
+function ensureArray(x) { return Array.isArray(x) ? x : (x ? [x] : []); }
+
+async function api(url, opt) {
+  const r = await fetch(url, opt);
+  const d = await r.json();
+  if (!d.ok) throw new Error(d.error || '请求失败');
+  return d;
+}
+
+function renderDisks(disks) {
+  $('disks').innerHTML = disks.filter(d => d.id === 'C:' || d.id === 'D:').map(d => {
+    const used = d.total - d.free;
+    const pct = Math.round(used / d.total * 100);
+    const cls = pct >= 90 ? 'danger' : pct >= 80 ? 'warn' : 'ok';
+    return `<div class="disk">
+      <div class="disk-head">
+        <span class="disk-name">${d.id.replace(':','')} 盘</span>
+        <span class="disk-tag">${pct >= 90 ? '空间告急' : pct >= 80 ? '偏紧' : '正常'}</span>
+      </div>
+      <div class="disk-num">
+        <span class="disk-free">${gb(d.free)}</span><span class="disk-unit">GB 可用</span>
+        <span class="disk-total">共 ${gb(d.total)} GB</span>
+      </div>
+      <div class="bar ${cls}"><i style="width:${pct}%"></i></div>
+      <div class="disk-foot"><span>已用 ${pct}%</span><span>${gb(used)} GB</span></div>
+    </div>`;
+  }).join('');
+}
+
+function renderList() {
+  const box = $('list');
+  if (!state.groups.length) {
+    box.innerHTML = '<div class="row"><div class="row-main"><div class="row-desc" style="padding:14px 0">没有找到可清理的项目。</div></div></div>';
+    return;
+  }
+  box.innerHTML = state.groups.map(g => {
+    const zero = g.bytes === 0;
+    const sel = state.selected.has(g.id);
+    const riskTxt = g.risk === 'low' ? '安全' : g.risk === 'mid' ? '谨慎' : '需管理员';
+    const chipCls = zero ? 'zero' : g.risk;
+    return `<div class="row ${sel ? 'sel' : ''} ${zero ? 'disabled' : ''}" data-id="${g.id}">
+      <input type="checkbox" ${sel ? 'checked' : ''} ${zero ? 'disabled' : ''} onchange="pick('${g.id}',this.checked)">
+      <div class="row-main">
+        <div class="row-title">
+          <span class="row-name">${g.name}</span>
+          <span class="chip ${chipCls}">${zero ? '已干净' : riskTxt}</span>
+        </div>
+        <div class="row-desc">${g.desc}</div>
+        <div class="row-path">${g.path}</div>
+      </div>
+      <div class="row-right">
+        <div class="size">${zero ? '—' : human(g.bytes)}</div>
+        <div class="cnt">${zero ? '' : g.files + ' 个文件'}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function pick(id, on) {
+  if (on) state.selected.add(id); else state.selected.delete(id);
+  const g = state.groups.find(x => x.id === id);
+  const row = document.querySelector(`.row[data-id="${id}"]`);
+  if (row) row.classList.toggle('sel', on);
+  updateSum();
+}
+
+function selectSafe() {
+  state.groups.forEach(g => {
+    if (g.risk === 'low' && g.bytes > 0) state.selected.add(g.id);
+  });
+  renderList(); updateSum();
+}
+
+function updateSum() {
+  const list = state.groups.filter(g => state.selected.has(g.id));
+  const bytes = list.reduce((a, g) => a + g.bytes, 0);
+  const btn = $('btnClean');
+  if (!list.length) {
+    $('sum').textContent = '未选择任何项目';
+    btn.disabled = true;
+  } else {
+    $('sum').innerHTML = `已选 <b>${list.length}</b> 项 · 预计释放 <span class="est">${human(bytes)}</span>`;
+    btn.disabled = bytes === 0;
+  }
+}
+
+async function load(manual) {
+  if (manual) toast('正在重新扫描…');
+  $('scanHint').textContent = '正在扫描…';
+  $('list').innerHTML = '<div class="row"><div class="row-main"><div class="row-desc" style="padding:14px 0">正在统计各目录体积，请稍候…</div></div></div>';
+  try {
+    const d = await api('/api/scan');
+    state.groups = ensureArray(d.groups).map(g => ({
+      ...g, bytes: Number(g.bytes) || 0, files: Number(g.files) || 0
+    }));
+    state.scanAt = d.when;
+    renderDisks(ensureArray(d.disks).map(x => ({ ...x, total: Number(x.total), free: Number(x.free) })));
+    state.selected.clear();
+    renderList(); updateSum();
+    $('scanHint').textContent = '扫描于 ' + d.when.slice(11);
+  } catch (e) {
+    $('list').innerHTML = `<div class="row"><div class="row-main"><div class="row-desc" style="padding:14px 0;color:#C0392B">扫描失败：${e.message}</div></div></div>`;
+    $('scanHint').textContent = '扫描失败';
+  }
+}
+
+function showLoading(title, text) {
+  $('modal').innerHTML = `<div class="spin"></div><h3>${title}</h3><div class="small">${text}</div>`;
+  $('overlay').classList.add('show');
+}
+function closeOverlay() { $('overlay').classList.remove('show'); }
+
+async function doClean() {
+  const ids = [...state.selected];
+  if (!ids.length) return;
+  const bytes = state.groups.filter(g => ids.includes(g.id)).reduce((a, g) => a + g.bytes, 0);
+  showLoading('正在清理', `正在把 ${human(bytes)} 移动到 D 盘备份区，文件多时需要一会儿…`);
+  try {
+    const d = await api('/api/clean', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids })
+    });
+    const freedGb = (d.freed / 1073741824).toFixed(2);
+    $('modal').innerHTML = `
+      <h3>清理完成</h3>
+      <div class="big">+${freedGb} GB</div>
+      <div class="small">
+        移动 ${d.moved} 个文件${d.skipped ? `，${d.skipped} 个因被占用跳过` : ''}<br>
+        以上文件已放到 D 盘备份区，没有删除，可随时还原
+      </div>
+      <div class="path">${d.backup || ''}</div>
+      <div class="acts">
+        <button onclick="openBackup('${(d.backup || '').replace(/\\/g, '\\\\')}')">打开备份目录</button>
+        <button class="primary" onclick="closeOverlay();load()">完成</button>
+      </div>`;
+  } catch (e) {
+    $('modal').innerHTML = `<h3>清理失败</h3><div class="small" style="color:#C0392B">${e.message}</div>
+      <div class="acts"><button class="primary" onclick="closeOverlay()">知道了</button></div>`;
+  }
+}
+
+async function openBackup(p) {
+  await fetch('/api/open', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ path: p }) });
+}
+
+async function toggleHist() {
+  const box = $('histBox');
+  if (box.classList.contains('open')) { box.classList.remove('open'); return; }
+  box.innerHTML = '<div class="hist-item"><span class="hist-meta">加载中…</span></div>';
+  box.classList.add('open');
+  try {
+    const d = await api('/api/history');
+    const list = ensureArray(d.list);
+    if (!list.length) { box.innerHTML = '<div class="hist-item"><span class="hist-meta">还没有清理记录</span></div>'; return; }
+    box.innerHTML = list.map(h => `<div class="hist-item">
+      <span class="hist-when">${h.when || ''}</span>
+      <span class="hist-freed">+${(Number(h.freed) / 1073741824).toFixed(2)} GB</span>
+      <span class="hist-meta">${h.moved || 0} 个文件 · ${(h.ids || []).join(' / ')}</span>
+    </div>`).join('');
+  } catch (e) {
+    box.innerHTML = `<div class="hist-item"><span class="hist-meta">读取失败：${e.message}</span></div>`;
+  }
+}
+
+load();
+</script>
+</body>
+</html>

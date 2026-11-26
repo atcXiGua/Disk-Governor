@@ -80,9 +80,18 @@ Disk Governor 换了个判断入口，只问三个问题：
 
 ## 快速开始
 
+### 获取
+
+```bash
+git clone https://github.com/atcXiGua/Disk-Governor.git
+cd Disk-Governor
+```
+
+也可以直接下 [源码 zip](https://github.com/atcXiGua/Disk-Governor/archive/refs/heads/master.zip)。**不要**在 `C:\Program Files` 或系统目录下运行，放到普通目录（如 `D:\Tools\`）即可。
+
 ### 方式一：便携版（推荐，无需安装 Node）
 
-解压 `DiskGovernor-2.0.0-portable-win-x64.zip`，双击：
+从 [Releases](https://github.com/atcXiGua/Disk-Governor/releases) 下载 `DiskGovernor-2.0.0-portable-win-x64.zip` 解压，双击：
 
 ```
 启动.cmd
